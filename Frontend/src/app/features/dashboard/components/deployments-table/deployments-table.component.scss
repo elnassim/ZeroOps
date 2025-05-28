@@ -1,0 +1,114 @@
+.table-container {
+  overflow-x: auto;
+}
+
+table {
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+thead {
+  background-color: var(--slate-900);
+}
+
+th {
+  padding: 0.75rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--slate-400);
+}
+
+tbody {
+  tr {
+    transition: background-color 0.2s;
+    
+    &:hover {
+      background-color: rgba(51, 65, 85, 0.5); // slate-700 with opacity
+    }
+    
+    &:nth-child(even) {
+      background-color: rgba(30, 41, 59, 0.5); // slate-800 with opacity
+    }
+    
+    &:nth-child(odd) {
+      background-color: rgba(30, 41, 59, 0.25); // slate-800 with less opacity
+    }
+  }
+}
+
+td {
+  padding: 1rem 1.5rem;
+  white-space: nowrap;
+}
+
+.deployment-name {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+}
+
+.status-badge {
+  padding: 0 0.5rem;
+  display: inline-flex;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  
+  &.success {
+    background-color: var(--green-100);
+    color: var(--green-800);
+  }
+  
+  &.error {
+    background-color: var(--red-100);
+    color: var(--red-800);
+  }
+  
+  &.building {
+    background-color: var(--yellow-100);
+    color: var(--yellow-800);
+  }
+}
+
+.deployment-url {
+  font-size: 0.875rem;
+  color: var(--slate-300);
+  
+  a {
+    color: var(--primary-color);
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.deployment-time {
+  font-size: 0.875rem;
+  color: var(--slate-300);
+}
+
+.actions {
+  text-align: right;
+  font-size: 0.875rem;
+  font-weight: 500;
+  
+  button {
+    color: var(--primary-color);
+    
+    &:hover {
+      color: var(--blue-400);
+    }
+    
+    &:first-child {
+      margin-right: 0.75rem;
+    }
+  }
+}

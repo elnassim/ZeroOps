@@ -1,0 +1,18 @@
+<section id="tech-stack" class="tech-stack-section">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Supported Tech Stack</h2>
+      <p class="section-subtitle">
+        Deploy applications built with your favorite technologies
+      </p>
+    </div>
+
+    <div class="tech-logos">
+      <div class="tech-logo-item" *ngFor="let tech of techLogos" @fadeIn>
+        <div class="tech-logo-bg">
+          <span class="tech-name">{{ tech.name }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

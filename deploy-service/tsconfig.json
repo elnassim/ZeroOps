@@ -1,0 +1,20 @@
+// filepath: c:\Users\ASUS\Documents\S8\Java-avance\ZeroOps\deploy-service\tsconfig.json
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true, /* Added to avoid issues with some @types packages if you install them later */
+    "forceConsistentCasingInFileNames": true /* Good practice */
+  },
+  "include": [
+    "src/**/*" /* Ensure only src files are compiled */
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

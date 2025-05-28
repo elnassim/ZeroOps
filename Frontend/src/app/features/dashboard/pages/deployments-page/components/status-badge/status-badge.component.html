@@ -1,0 +1,4 @@
+<div class="status-badge" [ngClass]="status">
+  <div class="status-dot" [ngClass]="{'pulse': status === 'building'}"></div>
+  <span class="status-text">{{ statusText }}</span>
+</div>

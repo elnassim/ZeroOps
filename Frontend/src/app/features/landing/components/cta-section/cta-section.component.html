@@ -1,0 +1,43 @@
+<section class="cta-section">
+    <div class="container">
+      <div class="cta-content">
+        <h2 class="cta-title" @fadeInUp>Start Deploying Smarter Today</h2>
+        <p class="cta-subtitle" @fadeInUp>
+          Join thousands of developers who trust ZeroOps for their deployment needs
+        </p>
+        
+        <form [formGroup]="emailForm" (ngSubmit)="onSubmit()" class="cta-form" @fadeInUp>
+          <div class="form-group">
+            <div class="input-wrapper">
+              <input 
+                type="email" 
+                id="cta-email"
+                formControlName="email"
+                placeholder="Enter your email" 
+                class="form-input" 
+                [ngClass]="{'input-error': email?.invalid && (email?.dirty || email?.touched)}"
+                aria-label="Email address"
+              >
+              <p class="error-message" *ngIf="email?.invalid && (email?.dirty || email?.touched)">
+                Please enter a valid email
+              </p>
+            </div>
+            <button type="submit" class="btn btn-primary" [disabled]="emailForm.invalid">
+              Get Started
+            </button>
+          </div>
+          <p class="success-message" *ngIf="isSubmitted">
+            Thank you! We'll be in touch soon.
+          </p>
+        </form>
+        
+        <div class="social-proof" @fadeIn>
+          <p class="social-proof-text">Trusted by 500+ companies worldwide</p>
+          <div class="company-logos">
+            <div class="company-logo-placeholder" *ngFor="let i of [1, 2, 3, 4, 5]"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  

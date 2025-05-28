@@ -1,0 +1,62 @@
+<div class="dashboard">
+  <h1 class="dashboard-title">Dashboard</h1>
+  
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <app-stats-card 
+      title="Total Deployments" 
+      value="128" 
+      trend="up" 
+      trendValue="12%" 
+      sparklineData="25,36,42,29,35,48,52,45,62,58,65,70"
+    ></app-stats-card>
+    
+    <app-stats-card 
+      title="Active Projects" 
+      value="24" 
+      trend="up"    
+      trendValue="8%" 
+      sparklineData="12,15,18,14,19,22,21,24,23,25,24,24"
+    ></app-stats-card>
+    
+    <app-stats-card 
+      title="Uptime" 
+      value="99.98%" 
+      trend="stable" 
+      trendValue="0.01%" 
+      icon="check-circle"
+    ></app-stats-card>
+    
+    <app-stats-card 
+      title="Errors Today" 
+      value="3" 
+      trend="down" 
+      trendValue="42%" 
+      icon="alert-circle"
+    ></app-stats-card>
+  </div>
+  
+  <!-- Deployments Table -->
+  <div class="deployments-container">
+    <h2 class="deployments-header">Recent Deployments</h2>
+    <app-deployments-table></app-deployments-table>
+  </div>
+  
+  <!-- Metrics Panel -->
+  <div class="metrics-grid">
+    <app-metrics-panel 
+      title="CPU Usage" 
+      chartData="10,25,30,22,40,38,45,55,48,52,60,58"
+      chartLabels="12am,2am,4am,6am,8am,10am,12pm,2pm,4pm,6pm,8pm,10pm"
+    ></app-metrics-panel>
+    
+    <app-metrics-panel 
+      title="Memory Usage" 
+      chartData="45,48,52,60,58,65,70,68,72,75,80,78"
+      chartLabels="12am,2am,4am,6am,8am,10am,12pm,2pm,4pm,6pm,8pm,10pm"
+    ></app-metrics-panel>
+  </div>
+  
+  <!-- Logs Preview -->
+  <app-logs-preview></app-logs-preview>
+</div>

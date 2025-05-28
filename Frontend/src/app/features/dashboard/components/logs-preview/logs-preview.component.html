@@ -1,0 +1,33 @@
+<div class="logs-container">
+  <div class="logs-header">
+    <h2 class="title">Recent Logs</h2>
+    <div class="filters">
+      <button 
+        *ngFor="let filter of ['All', 'Info', 'Warn', 'Error']" 
+        class="filter-button"
+        [class.active]="activeFilter === filter.toLowerCase()"
+        (click)="setFilter(filter.toLowerCase())"
+      >
+        {{ filter }}
+      </button>
+    </div>
+  </div>
+  
+  <div class="logs-content">
+    <div *ngFor="let log of filteredLogs" class="log-entry">
+      <div class="log-line">
+        <span class="timestamp">{{ log.timestamp }}</span>
+        <span class="level" [ngClass]="log.level">
+          [{{ log.level.toUpperCase() }}]
+        </span>
+        <span class="message">{{ log.message }}</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="logs-footer">
+    <button class="view-all-button">
+      View All Logs
+    </button>
+  </div>
+</div>

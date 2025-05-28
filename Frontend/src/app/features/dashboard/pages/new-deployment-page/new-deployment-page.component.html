@@ -1,0 +1,132 @@
+<div class="new-deployment-container">
+  <div class="page-header">
+    <h1 class="page-title">New Deployment</h1>
+    <button
+      class="back-button"
+      routerLink="/dashboard/deployments"
+      title="Back to Deployments"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"
+        />
+      </svg>
+      <span>Back</span>
+    </button>
+  </div>
+
+  <form [formGroup]="deployForm" (ngSubmit)="onSubmit()" class="deploy-form">
+    <div class="form-field">
+      <label for="repoUrl">Repository URL</label>
+      <input
+        id="repoUrl"
+        type="text"
+        formControlName="repoUrl"
+        placeholder="e.g., https://github.com/user/repo.git or git@github.com:user/repo.git"
+        [ngClass]="{
+          'input-error':
+            repoUrl?.invalid && (repoUrl?.dirty || repoUrl?.touched)
+        }"
+      />
+      <div
+        *ngIf="repoUrl?.invalid && (repoUrl?.dirty || repoUrl?.touched)"
+        class="error-message"
+      >
+        <span *ngIf="repoUrl?.errors?.['required']"
+          >Repository URL is required.</span
+        >
+        <span *ngIf="repoUrl?.errors?.['pattern']"
+          >Please enter a valid Git repository URL.</span
+        >
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label for="branch">Branch</label>
+      <input
+        id="branch"
+        type="text"
+        formControlName="branch"
+        placeholder="e.g., main, develop, feature/xyz"
+        [ngClass]="{
+          'input-error': branch?.invalid && (branch?.dirty || branch?.touched)
+        }"
+      />
+      <div
+        *ngIf="branch?.invalid && (branch?.dirty || branch?.touched)"
+        class="error-message"
+      >
+        <span *ngIf="branch?.errors?.['required']"
+          >Branch name is required.</span
+        >
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label for="strategyType">Deployment Strategy</label>
+      <select
+        id="strategyType"
+        formControlName="strategyType"
+        class="form-select"
+      >
+        <option value="default">Default</option>
+        <option value="rolling">Rolling Update</option>
+        <option value="bluegreen">Blue-Green</option>
+      </select>
+    </div>
+
+    <button
+      type="submit"
+      class="submit-btn"
+      [disabled]="deployForm.invalid || isLoading"
+    >
+      <span *ngIf="isLoading && !isPolling" class="spinner"></span>
+      <span
+        *ngIf="isLoading && isPolling"
+        class="spinner polling-spinner"
+      ></span>
+      <!-- Different spinner for polling -->
+      <span *ngIf="!isLoading">Deploy</span>
+    </button>
+
+    <div *ngIf="errorMessage" class="error-message global-error">
+      {{ errorMessage }}
+    </div>
+  </form>
+
+  <div *ngIf="deploymentId || currentStatus" class="deployment-status-info">
+    <h3 *ngIf="deploymentId">Deployment ID: {{ deploymentId }}</h3>
+    <p
+      *ngIf="currentStatus"
+      [ngClass]="{
+        'status-success': currentStatus && currentStatus.includes('SUCCESS'),
+        'status-failed': currentStatus && currentStatus.includes('FAILED'),
+        'status-progress':
+          currentStatus &&
+          !currentStatus.includes('SUCCESS') &&
+          !currentStatus.includes('FAILED')
+      }"
+    >
+      {{ currentStatus }}
+    </p>
+    <div *ngIf="isPolling" class="polling-indicator">
+      <div class="dot-pulse"></div>
+      <span>Checking status...</span>
+    </div>
+    <!-- If you want to display the deployment URL when available -->
+    <div *ngIf="deploymentUrl" class="deployment-url-info">
+      <strong>Live URL:</strong>
+      <a [href]="deploymentUrl" target="_blank" rel="noopener noreferrer">{{
+        deploymentUrl
+      }}</a>
+    </div>
+  </div>
+</div>

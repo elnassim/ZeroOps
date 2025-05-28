@@ -1,0 +1,236 @@
+<div class="signup-container">
+    <div class="signup-card-wrapper">
+      <div class="signup-card">
+        <div class="signup-header">
+          <div class="logo">
+            <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
+              <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path>
+              <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path>
+              <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path>
+            </svg>
+            <span class="logo-text">ZeroOps</span>
+          </div>
+          <h1 class="signup-title">Créer un compte</h1>
+          <p class="signup-subtitle">Rejoignez ZeroOps et commencez à déployer vos applications en quelques clics</p>
+        </div>
+  
+        
+  
+        <div class="divider">
+          <span class="divider-text">ou</span>
+        </div>
+  
+        <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="signup-form" novalidate>
+          <!-- Error message -->
+          <div *ngIf="errorMessage" class="error-message-container" role="alert">
+            <span class="error-icon">!</span>
+            <span>{{ errorMessage }}</span>
+          </div>
+  
+          <!-- Name fields (optional) -->
+          <div class="name-fields">
+            <div class="form-field">
+              <label for="firstName">Prénom</label>
+              <input 
+                id="firstName"
+                type="text" 
+                formControlName="firstName" 
+                placeholder="Votre prénom" 
+                autocomplete="given-name"
+              >
+              <div class="error-message" *ngIf="getFieldError('firstName')">{{ getFieldError('firstName') }}</div>
+            </div>
+  
+            <div class="form-field">
+              <label for="lastName">Nom</label>
+              <input 
+                id="lastName"
+                type="text" 
+                formControlName="lastName" 
+                placeholder="Votre nom" 
+                autocomplete="family-name"
+              >
+              <div class="error-message" *ngIf="getFieldError('lastName')">{{ getFieldError('lastName') }}</div>
+            </div>
+          </div>
+  
+          <!-- Email field -->
+          <div class="form-field">
+            <label for="email">Email</label>
+            <div class="input-with-icon">
+              <input 
+                id="email"
+                type="email" 
+                formControlName="email" 
+                placeholder="votre@email.com" 
+                autocomplete="email" 
+                required
+              >
+              <span class="input-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="20" height="16" x="2" y="4" rx="2"></rect>
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                </svg>
+              </span>
+            </div>
+            <div class="error-message" *ngIf="getFieldError('email')">{{ getFieldError('email') }}</div>
+          </div>
+  
+          <!-- Password field -->
+          <div class="form-field">
+            <label for="password">Mot de passe</label>
+            <div class="input-with-icon">
+              <input 
+                id="password"
+                [type]="hidePassword ? 'password' : 'text'" 
+                formControlName="password" 
+                placeholder="Votre mot de passe" 
+                autocomplete="new-password"
+                required
+              >
+              <button 
+                type="button" 
+                class="toggle-password" 
+                (click)="hidePassword = !hidePassword" 
+                [attr.aria-label]="'Cacher le mot de passe'" 
+                [attr.aria-pressed]="!hidePassword"
+              >
+                <svg *ngIf="hidePassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+                  <line x1="2" x2="22" y1="2" y2="22"></line>
+                </svg>
+                <svg *ngIf="!hidePassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <div class="error-message" *ngIf="getFieldError('password')">{{ getFieldError('password') }}</div>
+          </div>
+  
+          <!-- Password strength indicator -->
+          <div class="password-strength" *ngIf="signupForm.get('password')?.value">
+            <div class="progress-bar">
+              <div class="progress-fill" [ngClass]="'strength-' + passwordStrength" [style.width.%]="passwordStrengthPercent"></div>
+            </div>
+            <div class="password-strength-text">
+              <span>Force du mot de passe: </span>
+              <span [ngClass]="'strength-' + passwordStrength">
+                {{ passwordStrength === 'weak' ? 'Faible' : 
+                   passwordStrength === 'medium' ? 'Moyen' : 'Fort' }}
+              </span>
+            </div>
+          </div>
+  
+          <!-- Password requirements -->
+          <div class="password-requirements" *ngIf="signupForm.get('password')?.touched && signupForm.get('password')?.errors?.['passwordStrength']">
+            <p class="requirements-title">Le mot de passe doit contenir:</p>
+            <ul class="requirements-list">
+              <li [class.requirement-met]="!signupForm.get('password')?.errors?.['passwordStrength'] || signupForm.get('password')?.errors?.['passwordStrength'].hasUpperCase">
+                <span class="requirement-icon">
+                  {{ !signupForm.get('password')?.errors?.['passwordStrength'] || signupForm.get('password')?.errors?.['passwordStrength'].hasUpperCase ? '✓' : '✗' }}
+                </span>
+                <span>Au moins une lettre majuscule</span>
+              </li>
+              <li [class.requirement-met]="!signupForm.get('password')?.errors?.['passwordStrength'] || signupForm.get('password')?.errors?.['passwordStrength'].hasLowerCase">
+                <span class="requirement-icon">
+                  {{ !signupForm.get('password')?.errors?.['passwordStrength'] || signupForm.get('password')?.errors?.['passwordStrength'].hasLowerCase ? '✓' : '✗' }}
+                </span>
+                <span>Au moins une lettre minuscule</span>
+              </li>
+              <li [class.requirement-met]="!signupForm.get('password')?.errors?.['passwordStrength'] || signupForm.get('password')?.errors?.['passwordStrength'].hasNumeric">
+                <span class="requirement-icon">
+                  {{ !signupForm.get('password')?.errors?.['passwordStrength'] || signupForm.get('password')?.errors?.['passwordStrength'].hasNumeric ? '✓' : '✗' }}
+                </span>
+                <span>Au moins un chiffre</span>
+              </li>
+              <li [class.requirement-met]="!signupForm.get('password')?.errors?.['passwordStrength'] || signupForm.get('password')?.errors?.['passwordStrength'].hasSpecialChar">
+                <span class="requirement-icon">
+                  {{ !signupForm.get('password')?.errors?.['passwordStrength'] || signupForm.get('password')?.errors?.['passwordStrength'].hasSpecialChar ? '✓' : '✗' }}
+                </span>
+                <span>Au moins un caractère spécial</span>
+              </li>
+              <li [class.requirement-met]="signupForm.get('password')?.value?.length >= 8">
+                <span class="requirement-icon">
+                  {{ signupForm.get('password')?.value?.length >= 8 ? '✓' : '✗' }}
+                </span>
+                <span>Au moins 8 caractères</span>
+              </li>
+            </ul>
+          </div>
+  
+          <!-- Confirm Password field -->
+          <div class="form-field">
+            <label for="confirmPassword">Confirmer le mot de passe</label>
+            <div class="input-with-icon">
+              <input 
+                id="confirmPassword"
+                [type]="hideConfirmPassword ? 'password' : 'text'" 
+                formControlName="confirmPassword" 
+                placeholder="Confirmez votre mot de passe" 
+                autocomplete="new-password"
+                required
+              >
+              <button 
+                type="button" 
+                class="toggle-password" 
+                (click)="hideConfirmPassword = !hideConfirmPassword" 
+                [attr.aria-label]="'Cacher la confirmation du mot de passe'" 
+                [attr.aria-pressed]="!hideConfirmPassword"
+              >
+                <svg *ngIf="hideConfirmPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+                  <line x1="2" x2="22" y1="2" y2="22"></line>
+                </svg>
+                <svg *ngIf="!hideConfirmPassword" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+            <div class="error-message" *ngIf="getFieldError('confirmPassword')">{{ getFieldError('confirmPassword') }}</div>
+          </div>
+  
+          <!-- Terms and Remember Me checkboxes -->
+          <div class="checkbox-container">
+            <div class="checkbox-field">
+              <input type="checkbox" id="acceptTerms" formControlName="acceptTerms" required>
+              <label for="acceptTerms">
+                J'accepte les <a href="/terms" class="terms-link">conditions d'utilisation</a> et la <a href="/privacy" class="terms-link">politique de confidentialité</a>
+              </label>
+              <div class="error-message" *ngIf="signupForm.get('acceptTerms')?.touched && signupForm.get('acceptTerms')?.invalid">
+                Vous devez accepter les conditions d'utilisation pour continuer
+              </div>
+            </div>
+            
+            <div class="checkbox-field">
+              <input type="checkbox" id="rememberMe" formControlName="rememberMe">
+              <label for="rememberMe">Se souvenir de moi</label>
+            </div>
+          </div>
+  
+          <!-- Submit button -->
+          <button 
+            type="submit" 
+            class="submit-btn" 
+            [disabled]="signupForm.invalid || isLoading"
+            aria-label="Créer un compte"
+          >
+            <span *ngIf="isLoading" class="spinner"></span>
+            <span *ngIf="!isLoading">Créer un compte</span>
+          </button>
+  
+          <!-- Login link -->
+          <div class="login-link">
+            Vous avez déjà un compte? <a href="/auth/login">Se connecter</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  

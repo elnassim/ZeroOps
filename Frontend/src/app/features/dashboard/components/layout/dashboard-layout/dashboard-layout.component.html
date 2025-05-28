@@ -1,0 +1,12 @@
+<!-- filepath: c:\Users\ASUS\Documents\S8\Java-avance\ZeroOps\Frontend\src\app\features\dashboard\components\layout\dashboard-layout\dashboard-layout.component.html -->
+<div class="dashboard-layout">
+  <app-sidebar [isCollapsed]="isSidebarCollapsed"></app-sidebar>
+  <div class="dashboard-main-content" [class.sidebar-collapsed]="isSidebarCollapsed">
+    <app-header (toggleSidebar)="onToggleSidebar()"></app-header>
+    <main class="dashboard-page-content">
+      <router-outlet></router-outlet> <!-- Dashboard pages will be rendered here -->
+    </main>
+    <app-footer></app-footer>
+    <!-- Optional: <app-dashboard-footer></app-dashboard-footer> -->
+  </div>
+</div>

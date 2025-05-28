@@ -1,0 +1,56 @@
+<div class="deployments-page">
+  <div class="page-header">
+    <h1 class="page-title">Deployments</h1>
+    <div class="header-actions">
+      <button (click)="toggleViewMode()" class="btn btn-secondary view-toggle-btn" title="Toggle View">
+        <svg *ngIf="viewMode === 'table'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-grid-3x2-gap-fill" viewBox="0 0 16 16">
+          <path d="M1 4v2h4V4zm5 0v2h4V4zm5 0v2h4V4zm-5 5v2h4V9zm5 0v2h4V9zm-5-5H1v2h4zm5 0H6v2h4zm5 0h-4v2h4zM1 9v2h4V9zm-1 3V1h16v14H0zm1-13v2H1V1zm0 3v2H1V4zm0 3v2H1V7zm0 3v2H1v-2zm0 3v2H1v-2zM15 1H1v2h14zM1 4h14V1H1zm14 3H1v2h14zM1 7h14V4H1zm14 3H1v2h14zm-1 3v2h1v-2zm-4-3v2h4V9zm-5-3v2h4V4zm0 3v2h4V7z"/>
+        </svg>
+        <svg *ngIf="viewMode === 'card'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ul" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+        </svg>
+      </button>
+      <button routerLink="/dashboard/deployments/new" class="btn btn-primary new-deployment-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
+        </svg>
+        New Deployment
+      </button>
+    </div>
+  </div>
+
+  <div class="content-layout">
+    <div class="filter-column">
+      <app-filter-panel
+        [availableApps]="applications"
+        [availableBranches]="branches"
+        [initialFilters]="initialPanelFilters"
+        (filterChange)="onFiltersChanged($event)">
+      </app-filter-panel>
+    </div>
+
+    <div class="list-column">
+      <div *ngIf="isLoading$ | async" class="loading-indicator">
+        <p>Loading deployments...</p> <!-- You can replace this with a spinner component -->
+      </div>
+
+      <div *ngIf="!(isLoading$ | async) && displayedDeployments.length === 0" class="empty-state">
+        <p>No deployments found matching your criteria.</p>
+      </div>
+
+      <app-deployment-list
+        *ngIf="!(isLoading$ | async) && displayedDeployments.length > 0"
+        [deployments]="displayedDeployments"
+        [currentPage]="currentPageForTemplate"
+        [pageSize]="pageSizeForTemplate"
+        [totalItems]="totalItemsForTemplate"
+        [pageSizeOptions]="pageSizeOptions"
+        [viewMode]="viewMode"
+        (pageChange)="onPageChanged($event)"
+        (pageSizeChange)="onPageSizeChanged($event)"
+        (deploymentActionStarted)="handleDeploymentAction('started', $event)"
+        (deploymentActionFinished)="handleDeploymentAction('finished', $event)">
+      </app-deployment-list>
+    </div>
+  </div>
+</div>

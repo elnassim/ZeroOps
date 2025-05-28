@@ -1,0 +1,44 @@
+<aside class="sidebar" [class.collapsed]="isCollapsed" [class.expanded]="!isCollapsed">
+  <nav class="sidebar-nav">
+    <ul class="nav-list">
+      <li *ngFor="let item of navItems"
+          class="nav-item"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact: item.exact === undefined ? true : item.exact}">
+        <!-- Use <a> tag for items with a route for proper navigation semantics -->
+        <!-- Use a <div> or <button> for items with only an action for better semantics if not navigating -->
+        <a *ngIf="item.route; else actionItem"
+          [routerLink]="item.route"
+          class="nav-link"
+          [class.justify-center]="isCollapsed"
+          [attr.aria-current]="isActive(item.route) ? 'page' : null"
+        >
+          <span class="icon" [innerHTML]="item.icon | safeHtml"></span>
+          <span
+            *ngIf="!isCollapsed"
+            class="label"
+          >
+            {{ item.name }}
+          </span>
+        </a>
+        <ng-template #actionItem>
+          <div
+            class="nav-link"
+            [class.justify-center]="isCollapsed"
+            (click)="item.action ? item.action() : null"
+            tabindex="0" role="button" (keydown.enter)="item.action ? item.action() : null" (keydown.space)="item.action ? item.action() : null"
+            [attr.aria-label]="item.name"
+          >
+            <span class="icon" [innerHTML]="item.icon | safeHtml"></span>
+            <span
+              *ngIf="!isCollapsed"
+              class="label"
+            >
+              {{ item.name }}
+            </span>
+          </div>
+        </ng-template>
+      </li>
+    </ul>
+  </nav>
+</aside>

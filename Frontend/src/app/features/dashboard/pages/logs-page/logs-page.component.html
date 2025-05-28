@@ -1,0 +1,22 @@
+<div class="logs-page-container">
+  <h2>Deployment Activity Logs</h2>
+  <div class="logs-panel">
+    <ng-container *ngIf="events.length > 0; else noLogs">
+      <ul>
+        <li *ngFor="let event of events" [ngClass]="getEventClass(event.type)">
+          <span class="log-timestamp">[{{ event.timestamp | date:'yyyy-MM-dd HH:mm:ss' }}]</span>
+          <strong class="log-type">{{ event.type }}</strong>
+          <span class="log-id">(ID: {{ event.deploymentId }})</span>
+          <span class="log-message">&mdash; {{ event.message }}</span>
+          <details *ngIf="event.details" class="log-details">
+            <summary>Details</summary>
+            <pre>{{ event.details | json }}</pre>
+          </details>
+        </li>
+      </ul>
+    </ng-container>
+    <ng-template #noLogs>
+      <p class="no-logs-message">No deployment events recorded yet. Start a new deployment to see logs here.</p>
+    </ng-template>
+  </div>
+</div>

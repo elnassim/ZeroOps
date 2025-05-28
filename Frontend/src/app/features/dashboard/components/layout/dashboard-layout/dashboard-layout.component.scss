@@ -1,0 +1,44 @@
+// filepath: c:\Users\ASUS\Documents\S8\Java-avance\ZeroOps\Frontend\src\app\features\dashboard\components\layout\dashboard-layout\dashboard-layout.component.scss
+:host {
+  display: block;
+  height: 100vh; // Ensure layout takes full viewport height
+  background-color: var(--slate-950); // Or your main dashboard background
+}
+
+.dashboard-layout {
+  display: flex;
+  height: 100%;
+}
+
+app-dashboard-sidebar {
+  // Sidebar styling will be in its own component,
+  // but you might have transition effects here based on isCollapsed
+  flex-shrink: 0; // Prevent sidebar from shrinking
+}
+
+.dashboard-main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; // Allow content to scroll if it overflows
+  transition: margin-left 0.3s ease-in-out; // Smooth transition for sidebar collapse
+
+  // Adjust margin when sidebar is collapsed if your sidebar doesn't just shrink in width
+  // &.sidebar-collapsed {
+  //   margin-left: 4rem; /* Example: if collapsed sidebar width is 4rem */
+  // }
+}
+
+app-dashboard-header {
+  flex-shrink: 0; // Prevent header from shrinking
+}
+
+.dashboard-page-content {
+  flex-grow: 1;
+  padding: 1.5rem; // Example padding for content area
+  // background-color: var(--slate-900); // Example content area background
+}
+
+// app-dashboard-footer {
+//   flex-shrink: 0;
+// }

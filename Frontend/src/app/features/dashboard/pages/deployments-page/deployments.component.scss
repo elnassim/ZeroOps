@@ -1,0 +1,57 @@
+.deployments-page {
+  padding: 1rem; // Or match your dashboard layout padding
+  animation: fadeInUp 0.5s ease-out; // If you use this animation
+
+  .page-title {
+    font-size: 1.75rem; // Or your standard page title size
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary); // Assuming you have this CSS variable
+  }
+
+  .content-layout {
+    display: flex;
+    gap: 1.5rem;
+
+    @media (max-width: 1024px) { // Example breakpoint for stacking
+      flex-direction: column;
+    }
+
+    .filter-column {
+      flex: 0 0 280px; // Fixed width for filter panel, adjust as needed
+      // Or use flex-basis and allow shrinking/growing if preferred
+      @media (max-width: 1024px) {
+        flex: 1 1 auto; // Take full width when stacked
+      }
+    }
+
+    .list-column {
+      flex: 1 1 auto; // Takes remaining space
+      min-width: 0; // Important for flex items that might overflow
+    }
+  }
+
+  .loading-indicator, .empty-state {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px; // Ensure it takes some space
+    color: var(--text-secondary);
+    font-size: 1rem;
+    border: 1px dashed var(--slate-700);
+    border-radius: 0.5rem;
+    background-color: var(--slate-800); // Or a slightly different background
+  }
+}
+
+// Animation if you use it
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

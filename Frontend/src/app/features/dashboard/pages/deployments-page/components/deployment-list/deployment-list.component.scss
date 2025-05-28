@@ -1,0 +1,346 @@
+.deployment-list {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--slate-700);
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+.pagination-info {
+  color: var(--slate-400);
+  font-size: 0.875rem;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--slate-400);
+  font-size: 0.875rem;
+}
+
+.page-size-select {
+  background-color: var(--slate-700);
+  border: 1px solid var(--slate-600);
+  border-radius: 0.25rem;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--primary-color);
+  }
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+.deployments-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  
+  th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--slate-400);
+    border-bottom: 1px solid var(--slate-700);
+  }
+  
+  td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--slate-700);
+    font-size: 0.875rem;
+  }
+  
+  tr {
+    transition: all 0.2s;
+    
+    &:hover {
+      background-color: var(--slate-700);
+      transform: translateY(-1px);
+      box-shadow: 0 1px 0 0 var(--primary-color);
+    }
+    
+    &.even-row {
+      background-color: var(--slate-750);
+    }
+  }
+}
+
+.app-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: white;
+}
+
+.app-name {
+  font-weight: 500;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.branch-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--slate-700);
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deployment-url {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--primary-color);
+  text-decoration: none;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.external-link-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  color: var(--slate-400);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+  
+  
+  &:hover {
+    color: white;
+    background-color: var(--slate-700);
+  }
+}
+
+.action-btn, .card-action-btn {
+  position: relative; // Needed for spinner positioning if it's absolute
+
+  .button-spinner {
+    display: inline-block;
+    width: 1em; // Adjust size as needed
+    height: 1em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+    // If you want it to overlay the icon, you might need absolute positioning
+  }
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.action-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+// Mobile card view
+.mobile-view {
+  display: none;
+  
+  @media (max-width: 1024px) {
+    display: block;
+  }
+}
+
+.desktop-view {
+  @media (max-width: 1024px) {
+    display: none;
+  }
+}
+
+.deployment-card {
+  border: 1px solid var(--slate-700);
+  border-radius: 0.5rem;
+  margin: 1rem;
+  overflow: hidden;
+  transition: all 0.2s;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-color: var(--primary-color);
+  }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--slate-750);
+  border-bottom: 1px solid var(--slate-700);
+}
+
+.card-details {
+  padding: 1rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.detail-label {
+  color: var(--slate-400);
+  font-size: 0.75rem;
+}
+
+.card-actions {
+  display: flex;
+  border-top: 1px solid var(--slate-700);
+  
+  .card-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: none;
+    border: none;
+    color: var(--slate-300);
+    cursor: pointer;
+    transition: all 0.2s;
+    
+    &:hover {
+      background-color: var(--slate-700);
+      color: white;
+    }
+    
+    &:first-child {
+      border-right: 1px solid var(--slate-700);
+    }
+  }
+}
+
+// Pagination controls
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  border-top: 1px solid var(--slate-700);
+}
+
+.pagination-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: none;
+  border: 1px solid var(--slate-700);
+  border-radius: 0.25rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover:not(.disabled) {
+    background-color: var(--slate-700);
+  }
+  
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.pagination-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.pagination-pages {
+  display: flex;
+  margin: 0 0.5rem;
+}
+
+.page-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: none;
+  border: 1px solid var(--slate-700);
+  border-radius: 0.25rem;
+  color: white;
+  margin: 0 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover:not(.active) {
+    background-color: var(--slate-700);
+  }
+  
+  &.active {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

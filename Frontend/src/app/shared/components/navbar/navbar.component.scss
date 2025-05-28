@@ -1,0 +1,140 @@
+.main-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1000;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: transform 0.3s ease;
+  margin-right: auto;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.logo-icon {
+  height: 2.5rem;
+  width: 2.5rem;
+  color: var(--primary-color);
+}
+
+.logo-text {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  background: linear-gradient(to right, var(--primary-color), #4f7cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nav-links {
+  display: none;
+  gap: 2rem;
+  margin-right: 2rem;
+}
+
+.nav-link {
+  margin: 0;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  position: relative;
+  padding: 0.5rem 0;
+  font-size: 1.125rem;
+  letter-spacing: -0.01em;
+
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--primary-color);
+    transition: width 0.3s ease;
+  }
+
+  &:hover {
+    color: var(--primary-color);
+
+    &::after {
+      width: 100%;
+    }
+  }
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.nav-buttons .btn {
+  margin: 0;
+  padding: 0.75rem 1.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.nav-buttons .btn-outline {
+  display: none;
+  border: 2px solid var(--primary-color);
+
+  &:hover {
+    background-color: var(--primary-color);
+    color: white;
+  }
+}
+
+.nav-buttons .btn-primary {
+  background: linear-gradient(135deg, var(--primary-color), #4f7cff);
+  box-shadow: 0 4px 6px rgba(45, 93, 237, 0.2);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(45, 93, 237, 0.3);
+  }
+}
+
+@media (min-width: 768px) {
+  .nav-links {
+    display: flex;
+  }
+
+  .nav-buttons .btn-outline {
+    display: inline-flex;
+  }
+
+  .main-nav {
+    padding: 2rem 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .main-nav {
+    padding: 2rem 4rem;
+  }
+
+  .nav-links {
+    gap: 2.5rem;
+  }
+
+  .nav-buttons .btn {
+    padding: 0.875rem 2rem;
+  }
+}

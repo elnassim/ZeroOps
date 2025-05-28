@@ -1,0 +1,407 @@
+<div class="deployment-list">
+  <div class="list-header">
+    <div class="pagination-info">
+      Showing {{ startItem }}–{{ endItem }} of {{ totalItems }} deployments
+    </div>
+
+    <div class="page-size-selector">
+      <label for="pageSize">Show:</label>
+      <select
+        id="pageSize"
+        [ngModel]="pageSize"
+        (change)="onPageSizeChange($event)"
+        class="page-size-select"
+      >
+        <option *ngFor="let size of pageSizeOptions" [value]="size">
+          {{ size }}
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Desktop Table View -->
+  <div *ngIf="viewMode === 'table'" class="table-container desktop-view">
+    <table class="deployments-table">
+      <thead>
+        <tr>
+          <th>Application</th>
+          <th>Branch / Version</th>
+          <th>Status</th>
+          <th>Started</th>
+          <th>Duration</th>
+          <th>URL</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let deployment of deployments; let even = even"
+          [class.even-row]="even"
+        >
+          <td>
+            <div class="app-cell">
+              <div class="app-icon" [style.backgroundColor]="deployment.iconBg">
+                {{ deployment.appName.charAt(0).toUpperCase() }}
+              </div>
+              <span class="app-name" [title]="deployment.appName">{{
+                deployment.appName
+              }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="branch-badge" [title]="deployment.branch">{{
+              deployment.branch
+            }}</span>
+          </td>
+          <td>
+            <app-status-badge [status]="deployment.status"></app-status-badge>
+          </td>
+          <td>{{ deployment.startedAt }}</td>
+          <td>{{ formatDuration(deployment.duration) }}</td>
+          <td>
+            <div class="url-cell">
+              <a
+                [href]="deployment.url"
+                target="_blank"
+                class="deployment-url-link"
+                [title]="deployment.url"
+              >
+                {{ deployment.url || "N/A" }}
+                <svg
+                  *ngIf="deployment.url"
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="external-link-icon"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+              </a>
+              <button
+                *ngIf="deployment.url"
+                (click)="
+                  copyToClipboard(deployment.url, deployment.deploymentId)
+                "
+                class="copy-btn"
+                title="Copy URL"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  fill="currentColor"
+                  class="bi bi-clipboard"
+                  viewBox="0 0 16 16"
+                >
+                  <path
+                    d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"
+                  />
+                  <path
+                    d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button
+                (click)="viewLogs(deployment.deploymentId)"
+                class="action-btn"
+                title="View Logs"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="action-icon"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </button>
+              <button
+                (click)="redeploy(deployment.deploymentId)"
+                class="action-btn"
+                title="Redeploy"
+                [disabled]="redeployingId === deployment.deploymentId"
+              >
+                <span
+                  *ngIf="redeployingId === deployment.deploymentId"
+                  class="button-spinner"
+                ></span>
+                <svg
+                  *ngIf="redeployingId !== deployment.deploymentId"
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="action-icon"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile Card View -->
+  <div *ngIf="viewMode === 'card'" class="mobile-view">
+    <div *ngFor="let deployment of deployments" class="deployment-card">
+      <div class="card-header">
+        <div class="app-cell">
+          <div class="app-icon" [style.backgroundColor]="deployment.iconBg">
+            {{ deployment.appName.charAt(0).toUpperCase() }}
+          </div>
+          <span class="app-name" [title]="deployment.appName">{{
+            deployment.appName
+          }}</span>
+        </div>
+        <app-status-badge [status]="deployment.status"></app-status-badge>
+      </div>
+
+      <div class="card-details">
+        <div class="detail-row">
+          <span class="detail-label">Branch:</span>
+          <span class="branch-badge" [title]="deployment.branch">{{
+            deployment.branch
+          }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Started:</span>
+          <span>{{ deployment.startedAt }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Duration:</span>
+          <span>{{ formatDuration(deployment.duration) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">URL:</span>
+          <div class="url-cell">
+            <a
+              [href]="deployment.url"
+              target="_blank"
+              class="deployment-url-link"
+              [title]="deployment.url"
+            >
+              {{ deployment.url || "N/A" }}
+              <svg
+                *ngIf="deployment.url"
+                xmlns="http://www.w3.org/2000/svg"
+                class="external-link-icon"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                />
+              </svg>
+            </a>
+            <button
+              *ngIf="deployment.url"
+              (click)="copyToClipboard(deployment.url, deployment.deploymentId)"
+              class="copy-btn"
+              title="Copy URL"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                fill="currentColor"
+                class="bi bi-clipboard"
+                viewBox="0 0 16 16"
+              >
+                <path
+                  d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"
+                />
+                <path
+                  d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button
+          (click)="viewLogs(deployment.deploymentId)"
+          class="card-action-btn"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="action-icon"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          View Logs
+        </button>
+        <button
+          (click)="redeploy(deployment.deploymentId)"
+          class="card-action-btn"
+          [disabled]="redeployingId === deployment.deploymentId"
+        >
+          <span
+            *ngIf="redeployingId === deployment.deploymentId"
+            class="button-spinner"
+          ></span>
+          <svg
+            *ngIf="redeployingId !== deployment.deploymentId"
+            xmlns="http://www.w3.org/2000/svg"
+            class="action-icon"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          Redeploy
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination Controls -->
+  <div class="pagination-controls" *ngIf="totalPages > 0">
+    <button
+      (click)="goToPage(1)"
+      [disabled]="currentPage === 1"
+      class="pagination-btn"
+      [class.disabled]="currentPage === 1"
+      aria-label="Go to first page"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="pagination-icon"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+        />
+      </svg>
+    </button>
+
+    <button
+      (click)="goToPage(currentPage - 1)"
+      [disabled]="currentPage === 1"
+      class="pagination-btn"
+      [class.disabled]="currentPage === 1"
+      aria-label="Go to previous page"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="pagination-icon"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M15 19l-7-7 7-7"
+        />
+      </svg>
+    </button>
+
+    <div class="pagination-pages">
+      <button
+        *ngFor="let page of paginationRange"
+        (click)="goToPage(page)"
+        class="page-btn"
+        [class.active]="page === currentPage"
+        [attr.aria-current]="page === currentPage ? 'page' : null"
+        [attr.aria-label]="'Go to page ' + page"
+      >
+        {{ page }}
+      </button>
+    </div>
+
+    <button
+      (click)="goToPage(currentPage + 1)"
+      [disabled]="currentPage === totalPages"
+      class="pagination-btn"
+      [class.disabled]="currentPage === totalPages"
+      aria-label="Go to next page"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="pagination-icon"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9 5l7 7-7 7"
+        />
+      </svg>
+    </button>
+
+    <button
+      (click)="goToPage(totalPages)"
+      [disabled]="currentPage === totalPages"
+      class="pagination-btn"
+      [class.disabled]="currentPage === totalPages"
+      aria-label="Go to last page"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="pagination-icon"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M13 5l7 7-7 7M5 5l7 7-7 7"
+        />
+      </svg>
+    </button>
+  </div>
+</div>

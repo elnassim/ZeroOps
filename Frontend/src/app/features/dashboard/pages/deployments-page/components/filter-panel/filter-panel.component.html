@@ -1,0 +1,109 @@
+<div class="filter-panel">
+  <div class="filter-section">
+    <h3 class="filter-title">Status</h3>
+    <div class="filter-options">
+      <label class="filter-option">
+        <input
+          type="checkbox"
+          [(ngModel)]="statusFiltersInternal.all"
+          (change)="onStatusFilterChange()"
+        >
+        <span class="checkbox-label">All</span>
+      </label>
+
+      <label class="filter-option">
+        <input
+          type="checkbox"
+          [(ngModel)]="statusFiltersInternal.success"
+          (change)="onStatusFilterChange()"
+        >
+        <span class="checkbox-label">
+          <span class="status-dot success"></span>
+          Success
+        </span>
+      </label>
+
+      <label class="filter-option">
+        <input
+          type="checkbox"
+          [(ngModel)]="statusFiltersInternal.building" 
+          (change)="onStatusFilterChange()"
+        >
+        <span class="checkbox-label">
+          <span class="status-dot building"></span>
+          Building <!-- Changed from In Progress to Building -->
+        </span>
+      </label>
+
+      <label class="filter-option">
+        <input
+          type="checkbox"
+          [(ngModel)]="statusFiltersInternal.failed"
+          (change)="onStatusFilterChange()"
+        >
+        <span class="checkbox-label">
+          <span class="status-dot failed"></span>
+          Failed
+        </span>
+      </label>
+    </div>
+  </div>
+
+  <div class="filter-section">
+    <h3 class="filter-title">Application</h3>
+    <select
+      [(ngModel)]="selectedAppInternal"
+      (change)="onAppChange()"
+      class="app-select"
+    >
+      <option [ngValue]="null">All Applications</option>
+      <option *ngFor="let appName of availableApps" [ngValue]="appName">{{ appName }}</option>
+    </select>
+  </div>
+
+  <div class="filter-section"> <!-- New section for Branch filter -->
+    <h3 class="filter-title">Branch</h3>
+    <select
+      [(ngModel)]="selectedBranchInternal"
+      (change)="onBranchChange()"
+      class="app-select" 
+    >
+      <option [ngValue]="null">All Branches</option>
+      <option *ngFor="let branch of availableBranches" [ngValue]="branch">{{ branch }}</option>
+    </select>
+  </div>
+
+  <div class="filter-section">
+    <h3 class="filter-title">Date Range</h3>
+    <div class="date-inputs">
+      <div class="date-field">
+        <label for="startDate" class="date-label">From</label>
+        <input
+          type="date"
+          id="startDate"
+          [(ngModel)]="startDateInternal"
+          (change)="onDateChange()"
+          class="date-input"
+        >
+      </div>
+
+      <div class="date-field">
+        <label for="endDate" class="date-label">To</label>
+        <input
+          type="date"
+          id="endDate"
+          [(ngModel)]="endDateInternal"
+          (change)="onDateChange()"
+          class="date-input"
+        >
+      </div>
+    </div>
+  </div>
+
+  <button (click)="resetFilters()" class="reset-btn">
+    <svg xmlns="http://www.w3.org/2000/svg" class="reset-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    </svg>
+    Reset Filters
+  </button>
+</div>

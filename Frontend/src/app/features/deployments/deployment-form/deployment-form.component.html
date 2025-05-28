@@ -1,0 +1,143 @@
+<!-- filepath: c:\Users\ASUS\Documents\S8\Java-avance\ZeroOps\Frontend\src\app\features\deployments\deployment-form\deployment-form.component.html -->
+<div class="deployment-container">
+  <section class="deployment-form-section">
+    <h2>Deploy New Project</h2>
+    <form
+      #deployForm="ngForm"
+      (ngSubmit)="onSubmitDeployment(deployForm)"
+      class="deploy-form"
+    >
+      <div class="form-field">
+        <label for="gitUrlInput">Git Repository URL:</label>
+        <input
+          type="url"
+          id="gitUrlInput"
+          name="gitUrlInput"
+          [(ngModel)]="gitUrlInput"
+          required
+          pattern="https?://.+/.+"
+          #gitUrlModel="ngModel"
+          placeholder="e.g., https://github.com/user/repo.git"
+        />
+        <div
+          *ngIf="
+            gitUrlModel.invalid && (gitUrlModel.dirty || gitUrlModel.touched)
+          "
+          class="error-message"
+        >
+          <small *ngIf="gitUrlModel.errors?.['required']"
+            >Git URL is required.</small
+          >
+          <small *ngIf="gitUrlModel.errors?.['pattern']"
+            >Please enter a valid Git repository URL.</small
+          >
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label for="appNameInput">Application Name (Optional):</label>
+        <input
+          type="text"
+          id="appNameInput"
+          name="appNameInput"
+          [(ngModel)]="appNameInput"
+          placeholder="My Awesome App"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="branchInput">Branch (Optional, defaults to 'main'):</label>
+        <input
+          type="text"
+          id="branchInput"
+          name="branchInput"
+          [(ngModel)]="branchInput"
+          placeholder="main"
+        />
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="deployForm.invalid || isLoading || !gitUrlInput.trim()"
+      >
+        {{ isLoading ? "Deploying..." : "Deploy Project" }}
+      </button>
+      <div *ngIf="errorMessage" class="error-message global-error">
+        {{ errorMessage }}
+      </div>
+    </form>
+  </section>
+
+  <section class="deployments-list-section">
+    <h2>My Deployments</h2>
+    <div
+      *ngIf="deployments.length === 0 && !isLoading"
+      class="no-deployments-message"
+    >
+      <p>
+        No projects deployed yet. Add a Git repository above to get started!
+      </p>
+    </div>
+
+    <ul class="deployments-list">
+      <li
+        *ngFor="let deployment of deployments"
+        class="deployment-item"
+        [ngClass]="{
+          'status-processing': deployment.status === 'processing',
+          'status-deployed': deployment.status === 'deployed',
+          'status-failed':
+            deployment.status === 'failed' || deployment.status === 'POLL_ERROR'
+        }"
+      >
+        <div class="deployment-info">
+          <h3>{{ deployment.appName || "Untitled Project" }}</h3>
+          <p class="repo-url">
+            <strong>Repo:</strong> {{ deployment.gitUrl || "N/A" }}
+          </p>
+          <p><strong>Branch:</strong> {{ deployment.branch || "N/A" }}</p>
+          <p>
+            <small><strong>ID:</strong> {{ deployment.deploymentId }}</small>
+          </p>
+          <p>
+            <strong>Status:</strong>
+            <span class="status-badge">{{ deployment.status }}</span>
+          </p>
+          <p *ngIf="deployment.deploymentDate">
+            <strong>Deployed on:</strong>
+            {{ deployment.deploymentDate | date : "medium" }}
+          </p>
+        </div>
+        <div
+          *ngIf="deployment.status === 'deployed' && deployment.deploymentUrl"
+          class="deployment-link"
+        >
+          <strong>Live URL:</strong>
+          <a
+            [href]="deployment.deploymentUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            >{{ deployment.deploymentUrl }}</a
+          >
+        </div>
+        <div
+          *ngIf="deployment.status === 'processing'"
+          class="processing-indicator"
+        >
+          <p>
+            <em
+              >Processing... please wait. Status will update automatically.</em
+            >
+          </p>
+          <!-- You could add a spinner here -->
+        </div>
+        <div *ngIf="deployment.status === 'failed'" class="error-indicator">
+          <p><em>Deployment Failed. Check service logs for details.</em></p>
+        </div>
+        <div *ngIf="deployment.status === 'POLL_ERROR'" class="error-indicator">
+          <p><em>Error updating status. Please refresh or check logs.</em></p>
+        </div>
+      </li>
+    </ul>
+  </section>
+</div>

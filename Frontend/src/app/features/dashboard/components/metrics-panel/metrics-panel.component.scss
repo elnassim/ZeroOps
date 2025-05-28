@@ -1,0 +1,66 @@
+.metrics-card {
+  background: linear-gradient(to bottom right, var(--slate-800), var(--slate-900));
+  border-radius: 0.5rem;
+  border: 1px solid var(--slate-700);
+  padding: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  
+  .title {
+    font-size: 1.125rem;
+    font-weight: 500;
+  }
+  
+  .details-link {
+    font-size: 0.875rem;
+    color: var(--primary-color);
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  font-size: 0.75rem;
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
+    
+    .legend-color {
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 9999px;
+      margin-right: 0.25rem;
+      
+      &.current {
+        background-color: var(--primary-color);
+      }
+      
+      &.previous {
+        background-color: var(--slate-500);
+      }
+    }
+  }
+}
+
+.chart-container {
+  height: 16rem;
+}

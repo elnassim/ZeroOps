@@ -1,0 +1,39 @@
+.footer {
+  background-color: var(--slate-900);
+  border-top: 1px solid var(--slate-800);
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  color: var(--slate-400);
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  
+  @media (min-width: 768px) {
+    flex-direction: row;
+  }
+}
+
+.copyright {
+  margin-bottom: 0.5rem;
+  
+  @media (min-width: 768px) {
+    margin-bottom: 0;
+  }
+}
+
+.footer-links {
+  display: flex;
+  gap: 1.5rem;
+  
+  a {
+    transition: color 0.2s;
+    
+    &:hover {
+      color: white;
+    }
+  }
+}

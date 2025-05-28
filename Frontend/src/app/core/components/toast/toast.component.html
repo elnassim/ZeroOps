@@ -1,0 +1,6 @@
+<!-- // filepath: c:\Users\ASUS\Documents\S8\Java-avance\ZeroOps\Frontend\src\app\core\components\toast\toast.component.html -->
+<div class="toast-container">
+  <div *ngFor="let toast of toasts" [@toastAnimation] [ngClass]="getToastClass(toast)" (click)="removeToast(toast)">
+    <span>{{ toast.message }}</span>
+  </div>
+</div>

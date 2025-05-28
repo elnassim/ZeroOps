@@ -1,0 +1,21 @@
+<div class="metrics-card">
+  <div class="card-header">
+    <h3 class="title">{{ title }}</h3>
+    <a href="#" class="details-link">View Details</a>
+  </div>
+  
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-color current"></div>
+      <span>Current</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-color previous"></div>
+      <span>Previous</span>
+    </div>
+  </div>
+  
+  <div class="chart-container">
+    <canvas #chartCanvas></canvas>
+  </div>
+</div>

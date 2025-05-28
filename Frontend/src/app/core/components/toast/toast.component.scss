@@ -1,0 +1,44 @@
+// filepath: c:\Users\ASUS\Documents\S8\Java-avance\ZeroOps\Frontend\src\app\core\components\toast\toast.component.scss
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse; // New toasts appear on top
+  gap: 10px;
+}
+
+.toast {
+  padding: 15px 20px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  min-width: 250px;
+  max-width: 350px;
+  opacity: 0.95;
+  transition: opacity 0.3s ease;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.toast-success {
+  background-color: #28a745; // Green
+}
+
+.toast-error {
+  background-color: #dc3545; // Red
+}
+
+.toast-info {
+  background-color: #17a2b8; // Blue
+}
+
+.toast-warning {
+  background-color: #ffc107; // Yellow
+  color: #212529;
+}
