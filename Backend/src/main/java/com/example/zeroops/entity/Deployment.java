@@ -1,11 +1,9 @@
 package com.example.zeroops.entity;
 
-import com.example.zeroops.model.User; // Assuming User is in this package
+import com.example.zeroops.model.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -18,30 +16,28 @@ public class Deployment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "deployment_uuid", nullable = false, unique = true)
-    private String deploymentId;
-
-    @Column(name = "app_name", nullable = false)
-    private String appName; // This can be derived or same as Application name
+    @Column(name = "deployment_id", nullable = false, unique = true)
+    private String deploymentId; // Ensure this is the field name
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id") // Nullable if User is optional for some deployments
     private User user;
 
-    // --- Vercel-like workflow changes START ---
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "application_id", nullable = false) // Ensures application_id is NOT NULL
+    @JoinColumn(name = "application_id") // Nullable if Application is optional
     private Application application;
 
-    @Column(name = "version", nullable = false, length = 50) // Ensures version is NOT NULL
-    private String version; // Could be branch name, commit hash, or semantic version
+    @Column(name = "app_name", nullable = false)
+    private String appName;
 
-    @Column(name = "git_repo_url", nullable = false) // Store the repo URL for this deployment
+    @Column(name = "version", nullable = false)
+    private String version;
+
+    @Column(name = "git_repo_url", nullable = false)
     private String gitRepoUrl;
 
-    @Column(name = "git_branch", nullable = false) // Store the branch for this deployment
+    @Column(name = "git_branch", nullable = false)
     private String gitBranch;
-    // --- Vercel-like workflow changes END ---
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -50,28 +46,17 @@ public class Deployment {
     @Column(name = "deployment_date", nullable = false, updatable = false)
     private LocalDateTime deploymentDate;
 
-    private String gitUrl;
-
-    @Column(name = "log_file_path")
-    private String logFilePath;
+    @Column(name = "ended_at")
+    private LocalDateTime endedAt; // Ensure this field exists
 
     @Column(name = "deployment_url")
     private String deploymentUrl;
 
     @Column(name = "duration_seconds")
-    private Long durationSeconds;
+    private Long durationSeconds; // Ensure this field exists
 
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
-
-    public String getGitUrl() {
-        return gitUrl;
-    }
-
-    public void setGitUrl(String gitUrl) { // Add this method
-        this.gitUrl = gitUrl;
-    }
-    
-    // Constructors, other methods if needed
+    // Lombok will generate getters and setters
 }

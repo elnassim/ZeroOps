@@ -10,5 +10,7 @@ import lombok.AllArgsConstructor;
 public class DeployRequest {
     private String repoUrl;
     private String branch;
+    private String appName; // Ensure getter/setter for this
+    private String deploymentId;
     // Lombok's @Data will generate getters and setters
 }

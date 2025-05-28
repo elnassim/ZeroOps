@@ -24,7 +24,8 @@ export interface BackendDeploymentDTO {
 // Updated DeployResponse interface as per your request
 export interface DeployResponse {
   deploymentId: string;
-  [key: string]: any; // This should be the UUID string
+  [key: string]: any;
+  deploymentUrl?: string; // This should be the UUID string
   // Add other relevant fields from your backend's DTO if needed
   // e.g., initialStatus, appName, etc.
 }

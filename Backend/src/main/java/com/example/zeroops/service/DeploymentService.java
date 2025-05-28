@@ -38,7 +38,7 @@ public class DeploymentService {
     private final StringRedisTemplate stringRedisTemplate;
     private final ApplicationRepository applicationRepository;
 
-    @Value("${zeroops.deployment.base-url-template}")
+    @Value("${zeroops.deployment.base-url-template:http://localhost:8080/deployments/%s/static}") // Provide a default
     private String baseUrlTemplate;
 
     private static final String DEPLOY_QUEUE_NAME = "deploy-queue";
@@ -57,17 +57,11 @@ public class DeploymentService {
     private User getCurrentAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getPrincipal())) {
-            logger.warn("No authenticated user found or user is anonymous.");
             throw new UsernameNotFoundException("User not authenticated");
         }
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> {
-                    logger.error("Authenticated user email {} not found in database.", email);
-                    return new UsernameNotFoundException("User not found with email: " + email);
-                });
-        logger.debug("[DeploymentService] getCurrentAuthenticatedUser: ID = {}, Email = {}", user.getId(), user.getEmail());
-        return user;
+        String username = authentication.getName();
+        return userRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
     }
 
     @Transactional
@@ -75,18 +69,12 @@ public class DeploymentService {
         User currentUser = getCurrentAuthenticatedUser();
         String deploymentId = UUID.randomUUID().toString();
 
-        // TEMPORARY WORKAROUND: Create a unique Application record for each deployment
-        // This avoids conflicts if the same gitUrl is deployed multiple times by the same or different users
-        // A more robust solution would involve checking if an Application with this gitUrl (and potentially branch/user)
-        // already exists and reusing it, or having a clearer concept of "Project" vs "Deployment".
         Application application = new Application();
         application.setUser(currentUser);
-        // Make the Git URL unique for the Application entity to avoid unique constraint violations
-        // if the same repo is deployed multiple times. This is a simplification.
-        String uniqueAppGitUrl = gitUrlInput + "#" + deploymentId; // Ensure uniqueness for Application entity
+        String uniqueAppGitUrl = gitUrlInput + "#" + deploymentId;
         application.setName(appName != null && !appName.trim().isEmpty() ? appName.trim() : appNameFromGitUrl(gitUrlInput));
-        application.setGitUrl(uniqueAppGitUrl); // Store the unique version for the Application entity
-        application.setRepositoryUrl(uniqueAppGitUrl); // Assuming repositoryUrl is similar for now
+        application.setGitUrl(uniqueAppGitUrl);
+        application.setRepositoryUrl(uniqueAppGitUrl);
         application.setCreatedAt(LocalDateTime.now());
         Application savedApplication = applicationRepository.save(application);
         logger.info("TEMPORARY WORKAROUND: Created a new, unique Application record for this deployment. User ID: {}", currentUser.getId());
@@ -97,7 +85,7 @@ public class DeploymentService {
 
         Deployment newDeployment = new Deployment();
         newDeployment.setDeploymentId(deploymentId);
-        newDeployment.setApplication(savedApplication); // Link to the (potentially new) Application
+        newDeployment.setApplication(savedApplication);
         newDeployment.setUser(currentUser);
 
         String deploymentAppName = (appName != null && !appName.trim().isEmpty()) ? appName.trim() : appNameFromGitUrl(gitUrlInput);
@@ -106,12 +94,14 @@ public class DeploymentService {
         String trimmedGitUrl = gitUrlInput.trim();
         String actualBranch = (branch == null || branch.trim().isEmpty()) ? "main" : branch.trim();
 
-        newDeployment.setGitRepoUrl(trimmedGitUrl);
-        // Also set Deployment.gitUrl if that field exists and is intended for the original URL
-        newDeployment.setGitUrl(trimmedGitUrl);
+        newDeployment.setGitRepoUrl(trimmedGitUrl); // Corrected: Use setGitRepoUrl
+        // If you intended to have a separate 'gitUrl' field in Deployment for the original URL,
+        // ensure that field and its setter exist in the Deployment entity.
+        // Otherwise, remove the line below if gitRepoUrl is the only field for the git URL.
+        // newDeployment.setGitUrl(trimmedGitUrl); // This line was causing the error if 'gitUrl' field doesn't exist
 
         newDeployment.setGitBranch(actualBranch);
-        newDeployment.setVersion(actualBranch); // 'version' often stores the branch or tag being deployed
+        newDeployment.setVersion(actualBranch);
         newDeployment.setStatus(DeploymentStatus.PENDING);
         newDeployment.setDeploymentDate(LocalDateTime.now());
 
@@ -119,20 +109,15 @@ public class DeploymentService {
         logger.info("New deployment record saved with ID: {} and UUID: {}", savedDeployment.getId(), savedDeployment.getDeploymentId());
 
         try {
-            // Change from convertAndSend (Pub/Sub) to leftPush (List operation)
             stringRedisTemplate.opsForList().leftPush(DEPLOY_QUEUE_NAME, deploymentId);
             logger.info("LPUSHed deployment UUID {} to Redis list '{}'", deploymentId, DEPLOY_QUEUE_NAME);
         } catch (Exception e) {
             logger.error("Failed to LPUSH deployment UUID {} to Redis list '{}'. Error: {}", deploymentId, DEPLOY_QUEUE_NAME, e.getMessage(), e);
-            // Consider how to handle this failure (e.g., set status to FAILED_TO_QUEUE, throw exception)
-            // For now, we'll let the DTO be returned but the worker won't pick it up.
-            // You might want to throw a custom exception or update deployment status to FAILED_QUEUEING
         }
 
         return convertToDTO(savedDeployment);
     }
 
-    // Helper function to derive app name from Git URL (if not provided)
     private String appNameFromGitUrl(String gitUrl) {
         if (gitUrl == null || gitUrl.trim().isEmpty()) {
             return "Untitled Project";
@@ -151,15 +136,8 @@ public class DeploymentService {
     }
 
     public DeploymentDTO getDeploymentDetailsById(String deploymentId) {
-        logger.info("[DeploymentService] Attempting to get details for UUID: {}", deploymentId);
-        User currentUser = getCurrentAuthenticatedUser();
-        logger.info("[DeploymentService] Current user ID: {} attempting to access UUID: {}", currentUser.getId(), deploymentId);
-        Deployment deployment = deploymentRepository.findByDeploymentIdAndUser_Id(deploymentId, currentUser.getId())
-                .orElseThrow(() -> {
-                    logger.warn("Deployment with UUID {} not found for user ID {}", deploymentId, currentUser.getId());
-                    return new ResourceNotFoundException("Deployment not found with UUID: " + deploymentId);
-                });
-        logger.info("[DeploymentService] Found deployment for UUID: {} for user ID: {}", deploymentId, currentUser.getId());
+        Deployment deployment = deploymentRepository.findByDeploymentId(deploymentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Deployment not found with UUID: " + deploymentId));
         return convertToDTO(deployment);
     }
 
@@ -221,6 +199,13 @@ public class DeploymentService {
         }
         if (durationSeconds != null) {
             deployment.setDurationSeconds(durationSeconds);
+        }
+        if (newStatus == DeploymentStatus.SUCCESS || newStatus == DeploymentStatus.FAILED || newStatus == DeploymentStatus.DEPLOYED) {
+            deployment.setEndedAt(LocalDateTime.now());
+            if (deployment.getDeploymentDate() != null && deployment.getEndedAt() != null) {
+                 // Ensure duration is only set if endedAt is present
+                deployment.setDurationSeconds(java.time.Duration.between(deployment.getDeploymentDate(), deployment.getEndedAt()).getSeconds());
+            }
         }
         deploymentRepository.save(deployment);
         logger.info("[DeploymentService] Successfully updated status for UUID: {} to {}. URL: {}, Error: {}",

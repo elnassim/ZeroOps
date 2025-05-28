@@ -6,15 +6,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
-import java.util.List;
 
 @Repository
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
-    // Find an application by its name (if you still need this)
-    Optional<Application> findByNameAndUser(String name, User user); // Or just findByName if name is globally unique
-    Optional<Application> findByGitUrl(String gitUrl);
-    // --- Vercel-like workflow: Find by user and repository URL ---
+    // This might be used by redeploy if it needs to look up an application
+    // based on user and repoUrl to link to the new deployment.
+    // If redeploy directly copies the Application object from the old deployment,
+    // this specific find method might not be strictly necessary for that flow.
     Optional<Application> findByUserAndRepositoryUrl(User user, String repositoryUrl);
 
-    List<Application> findAllByUser(User user); // To list all applications for a user
+    // Remove findByRepositoryUrlAndUser if it was only for the abandoned pattern
+    // Optional<Application> findByRepositoryUrlAndUser(String repositoryUrl, User user);
 }

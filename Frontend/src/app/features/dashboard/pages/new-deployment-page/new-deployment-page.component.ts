@@ -1,18 +1,15 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { Subject } from 'rxjs';
-import { switchMap, takeUntil, finalize, tap } from 'rxjs/operators';
-import { DeploymentEvent, DeploymentEventService } from '../../../../core/services/deployment-event.service';
-
-// Assuming DeployResponse and DeploymentStatusResponse are correctly defined
-// and that DeploymentService here is the one for initiating,
-// and DeployStatusService is for polling.
+import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Subject, of } from 'rxjs';
+import { takeUntil, switchMap, tap, finalize, catchError } from 'rxjs/operators';
+// Remove DeployApplicationRequest from this import as it's not exported by the service
 import { DeploymentService, DeployResponse } from '../../services/deployment.service';
 import { DeployStatusService, DeploymentStatusResponse } from '../../services/deploy-status.service';
 import { ToastService } from '../../../../core/services/toast.service';
-// import { ActiveDeploymentStateService } from '../../../../core/services/active-deployment-state.service'; // If you implement state persistence
+import { DeploymentEventService, DeploymentEvent } from '../../../../core/services/deployment-event.service';
 
 @Component({
   selector: 'app-new-deployment-page',
@@ -25,220 +22,182 @@ export class NewDeploymentPageComponent implements OnInit, OnDestroy {
   deployForm!: FormGroup;
   isLoading = false;
   isPolling = false;
-  deploymentId: string | null = null; // This will store the UUID
-  currentStatus: string | null = null;
   errorMessage: string | null = null;
-  deploymentUrl: string | null = null; // To store the final URL
+  deploymentId: string | null = null;
+  currentStatus: string | null = null;
+  deploymentUrl: string | null = null;
 
-  private unsubscribe$ = new Subject<void>();
-  private gitUrlRegex = /^(?:git|ssh|https|http):\/\/[^\s/$.?#].[^\s]*$/i; // Basic Git URL regex, adjust as needed
+  private destroy$ = new Subject<void>();
+  private pollingStop$ = new Subject<void>(); // Used to stop the current polling operation
+
+  private gitUrlRegex = /^(?:(?:https?|git):\/\/|git@)(?:[^:]+@)?(?:[\w.-]+)(?:\.[\w.-]+)?(?:\/[\w.-~]*)*\/([\w.-]+?)(\.git)?(?:\/?|\#[\w\.-]+?)$/;
 
   constructor(
-    private fb: FormBuilder, // Inject FormBuilder
-    private router: Router,
+    private fb: FormBuilder,
     private deploymentService: DeploymentService,
+    private router: Router,
     private deployStatusService: DeployStatusService,
     private toastService: ToastService,
     private eventBus: DeploymentEventService,
-    // private activeDeploymentStateService: ActiveDeploymentStateService // If you implement state persistence
-  ) {
-    console.log('[NewDeploymentPageComponent] Constructor called.');
-  }
+  ) {}
 
   ngOnInit(): void {
-    console.log('[NewDeploymentPageComponent] ngOnInit called.');
     this.deployForm = this.fb.group({
       repoUrl: ['', [Validators.required, Validators.pattern(this.gitUrlRegex)]],
-      branch: ['', Validators.pattern(/^[a-zA-Z0-9_\-\.\/]+$/)], // Basic pattern for branch, allow empty for default
-      strategyType: ['default', Validators.required] // Add strategyType with default
+      branch: ['main', Validators.required],
     });
-    console.log('[NewDeploymentPageComponent] ngOnInit completed, form initialized.');
-    // Logic to restore active deployment if using ActiveDeploymentStateService would go here
   }
 
-  // Add getters for easy access to form controls in the template
   get repoUrl() { return this.deployForm.get('repoUrl'); }
   get branch() { return this.deployForm.get('branch'); }
-  get strategyType() { return this.deployForm.get('strategyType'); }
-
 
   onSubmit(): void {
-    console.log('[NewDeploymentPageComponent] onSubmit called.');
     if (this.deployForm.invalid) {
-      this.deployForm.markAllAsTouched(); // Mark all fields as touched to show errors
-      const formErrors = this.getFormValidationErrors();
-      this.errorMessage = "Please correct the errors: " + formErrors.join(', ');
-      this.toastService.showError(this.errorMessage);
-      console.warn('[NewDeploymentPageComponent] Form is invalid:', this.deployForm.errors, 'Touched:', this.deployForm.touched);
+      this.errorMessage = 'Please correct the errors in the form.';
+      this.deployForm.markAllAsTouched();
       return;
     }
 
     this.isLoading = true;
-    this.isPolling = false; // Reset polling state
-    this.deploymentId = null; // Reset before new deployment
-    this.currentStatus = "Initializing deployment...";
+    this.isPolling = false;
     this.errorMessage = null;
+    this.deploymentId = null;
+    this.currentStatus = 'Initiating deployment...';
     this.deploymentUrl = null;
+    this.pollingStop$.next(); // Signal to stop any ongoing polling from previous submissions
 
-    const { repoUrl, branch, strategyType } = this.deployForm.value; // Get values from reactive form
-    const effectiveBranch = branch || null; // Send null if branch is empty string, backend handles default
+    const { repoUrl, branch } = this.deployForm.value;
+    const appName = this.extractAppNameFromRepoUrl(repoUrl);
 
-    this.toastService.showInfo('Deployment process started...');
-    console.log(`[NewDeploymentPageComponent] Initiating deployment for URL: ${repoUrl}, Branch: ${effectiveBranch || 'default'}, Strategy: ${strategyType}`);
-
-    this.eventBus.emit({
-      deploymentId: 'pending-initiation',
-      type: 'STARTED',
-      message: `Deployment initiated for ${repoUrl} (branch: ${effectiveBranch || 'default'}) with ${strategyType} strategy.`,
-      timestamp: new Date()
-    });
-
-    this.stopPollingAndCleanup(); // Ensure any previous polling is stopped
-
-    this.deploymentService.deploy(repoUrl, effectiveBranch, strategyType).pipe(
-      tap((deployResponse: DeployResponse) => {
-        if (!deployResponse || !deployResponse.deploymentId) {
-          console.error('[NewDeploymentPageComponent] Invalid deployResponse (missing deploymentId):', deployResponse);
-          this.eventBus.emit({
-            deploymentId: 'initiation-error',
-            type: 'ERROR',
-            message: 'Failed to get deploymentId from backend on initiation.',
-            timestamp: new Date(),
-            details: deployResponse
-          });
-          throw new Error('Deployment UUID not received from initial deploy call.');
-        }
-        this.deploymentId = deployResponse.deploymentId;
-        this.currentStatus = "Deployment initiated, polling status...";
-        this.toastService.showSuccess(`Deployment initiated! UUID: ${this.deploymentId}`);
-        console.log('[NewDeploymentPageComponent] Deployment initiated response:', deployResponse);
-        this.isPolling = true; // Set polling to true as we are about to start
-
-        this.eventBus.emit({
-            deploymentId: this.deploymentId!, // Assert deploymentId is not null here
-            type: 'STARTED', // Or a more specific 'QUEUED' or 'INITIALIZED'
-            message: `Deployment ${this.deploymentId!} for ${repoUrl} (branch: ${effectiveBranch || 'default'}) using ${strategyType} strategy has been queued.`,
-            timestamp: new Date()
-        });
-      }),
-      switchMap((deployResponse: DeployResponse) => { // deployResponse here still has deploymentId
-        if (!this.deploymentId) {
-            // This case should ideally be caught by the tap operator's error throwing
-            console.error('[NewDeploymentPageComponent] deploymentId is null before polling in switchMap.');
-            throw new Error('Deployment ID not available for polling.');
-        }
-        console.log(`[NewDeploymentPageComponent] switchMap: Polling status for deployment UUID: ${this.deploymentId}`);
-        return this.deployStatusService.pollStatus(this.deploymentId!); // Assert deploymentId is not null
-      }),
-      takeUntil(this.unsubscribe$),
-      finalize(() => {
-        this.isLoading = false;
-        // isPolling is managed by the next/error/complete handlers of the pollStatus observable
-        console.log('[NewDeploymentPageComponent] Finalize: isLoading set to false.');
-      })
-    ).subscribe({
-      next: (statusResponse: DeploymentStatusResponse) => {
-        console.log(`[NewDeploymentPageComponent] Deployment status update:`, statusResponse);
-        this.currentStatus = `Status: ${statusResponse.status}`; // Update current status for UI
-        this.deploymentUrl = statusResponse.url || null;
-
-        const normalizedStatus = statusResponse.status ? statusResponse.status.toLowerCase() : '';
-
-        this.eventBus.emit({
-          deploymentId: this.deploymentId!,
-          type: this.mapStatusToEventType(statusResponse.status),
-          message: `Deployment ${this.deploymentId!} status: ${statusResponse.status}. ${statusResponse.message || ''}`,
-          timestamp: new Date(),
-          details: { url: this.deploymentUrl }
-        });
-
-        if (normalizedStatus === 'success' || normalizedStatus === 'deployed' || normalizedStatus === 'failed' || normalizedStatus === 'error' || normalizedStatus === 'poll_error') {
-          this.isPolling = false; // Stop polling on terminal states
-          if (normalizedStatus === 'success' || normalizedStatus === 'deployed') {
-            this.toastService.showSuccess(`Deployment Successful! UUID: ${this.deploymentId!}. URL: ${this.deploymentUrl || 'N/A'}`);
+    // Call the 'deploy' method with individual arguments
+    this.deploymentService.deploy(repoUrl, branch, appName)
+      .pipe(
+        tap((response: DeployResponse) => {
+          if (response && response.deploymentId) {
+            this.deploymentId = response.deploymentId;
+            const idMessagePart = `ID: ${this.deploymentId}`; // this.deploymentId is string here
+            this.currentStatus = `Deployment initiated (${idMessagePart}). Waiting for status updates...`;
+            // Corrected ToastService call: combine title and message
+            this.toastService.showSuccess(`Deployment initiated! ${idMessagePart}`);
+            
+            this.eventBus.emit({
+              type: 'STARTED',
+              deploymentId: this.deploymentId, 
+              message: `Deployment started for ${repoUrl}. ID: ${this.deploymentId}`,
+              timestamp: new Date(),
+              details: { repoUrl, branch, appName }
+            });
+            this.isPolling = true;
           } else {
-            this.toastService.showError(`Deployment Failed. UUID: ${this.deploymentId!}. Status: ${statusResponse.status}. ${statusResponse.message || ''}`);
-            this.errorMessage = `Deployment failed with status: ${statusResponse.status}. ${statusResponse.message || ''}`;
+            console.error('Invalid response from deployment initiation, missing deploymentId:', response);
+            this.currentStatus = 'Failed to initiate deployment: Server did not return a deployment ID.';
+            // Corrected ToastService call: pass the full message
+            this.toastService.showError(this.currentStatus);
+            this.isLoading = false;
+            this.deploymentId = null; 
           }
-          console.log(`[NewDeploymentPageComponent] Terminal status reached for ${this.deploymentId}: ${normalizedStatus}. Polling stopped.`);
-        } else {
-          // Non-terminal status, polling continues implicitly via deployStatusService
-          console.log(`[NewDeploymentPageComponent] Intermediate status for ${this.deploymentId}: ${normalizedStatus}`);
+        }),
+        switchMap(() => { 
+          if (this.deploymentId) { 
+            return this.deployStatusService.pollStatus(this.deploymentId);
+          }
+          return of(null).pipe(
+             tap(() => { if (this.isLoading) this.isLoading = false; this.isPolling = false; }), 
+             switchMap(() => new Subject<DeploymentStatusResponse | null>()) 
+          );
+        }),
+        takeUntil(this.pollingStop$), 
+        takeUntil(this.destroy$),    
+        finalize(() => {
+          if (this.isLoading) this.isLoading = false;
+          this.isPolling = false;
+        }),
+        catchError((err: HttpErrorResponse) => {
+          console.error('Error in deployment process:', err);
+          const backendError = err.error?.error || err.error?.message || err.message || 'An unknown error occurred.';
+          this.errorMessage = backendError; 
+          this.currentStatus = `Error: ${this.errorMessage}`;
+          // Corrected ToastService call: pass the full message
+          this.toastService.showError(this.errorMessage|| 'An unexpected error occurred during deployment.');
+
+          const idForEvent = this.deploymentId || `unknown-for-${repoUrl}`;
+          this.eventBus.emit({
+            type: 'FAILED',
+            deploymentId: idForEvent,
+            message: this.errorMessage || 'Deployment process failed with an unspecified error.',  
+            timestamp: new Date(),
+            details: { errorObj: err }
+          });
+          this.isLoading = false; 
+          this.isPolling = false;
+          return of(null); 
+        })
+      )
+      .subscribe({
+        next: (statusResponse: DeploymentStatusResponse | null) => {
+          if (!statusResponse) { 
+            return;
+          }
+
+          this.currentStatus = statusResponse.message || statusResponse.status;
+          this.deploymentUrl = statusResponse.url || null;
+          const idForDisplay = this.deploymentId || 'N/A';
+
+          const eventType = this.mapStatusToEventType(statusResponse.status);
+          if (eventType && this.deploymentId) {
+            this.eventBus.emit({
+              type: eventType,
+              deploymentId: this.deploymentId, 
+              message: `Deployment ${this.deploymentId} status: ${statusResponse.status}. ${statusResponse.message || ''}`,
+              timestamp: new Date(),
+              details: { status: statusResponse.status, url: this.deploymentUrl, originalMessage: statusResponse.message }
+            });
+          }
+
+          const upperStatus = statusResponse.status.toUpperCase();
+          if (upperStatus === 'SUCCESS' || upperStatus === 'DEPLOYED') {
+            // This call was already correct
+            this.toastService.showSuccess(`Deployment Successful! ID: ${idForDisplay}`);
+            this.pollingStop$.next(); 
+          } else if (upperStatus === 'FAILED' || upperStatus === 'POLL_ERROR_SERVICE' || upperStatus === 'TIMEOUT_POLL') {
+            const finalMessage = this.currentStatus || `Deployment polling failed for ID: ${idForDisplay}`;
+            // Corrected ToastService call: pass the full message
+            this.toastService.showError(finalMessage);
+            this.errorMessage = finalMessage; 
+            this.pollingStop$.next(); 
+          }
         }
-      },
-      error: (err: Error) => {
-        console.error('[NewDeploymentPageComponent] Error during deployment or polling pipeline:', err);
-        this.errorMessage = err.message || 'An unexpected error occurred during deployment.';
-        this.toastService.showError(this.errorMessage);
-        this.eventBus.emit({
-          deploymentId: this.deploymentId || 'unknown-id-on-error',
-          type: 'ERROR', // Or FAILED if it's a definitive failure of the deployment itself
-          message: `Error in deployment/polling: ${this.errorMessage}`,
-          timestamp: new Date(),
-          details: err
-        });
-        this.stopPollingAndCleanup(); // Ensure isLoading and isPolling are false
-      },
-      complete: () => {
-        // This 'complete' is for the subscription in NewDeploymentPageComponent.
-        // It will be called when takeUntil(this.unsubscribe$) emits OR pollStatus completes.
-        console.log(`[NewDeploymentPageComponent] Deployment and polling pipeline completed for ${this.deploymentId}.`);
-        // Ensure isPolling is false if not already set by a terminal status in 'next' or by error
-        if (this.isPolling) {
-            this.isPolling = false;
-            console.log('[NewDeploymentPageComponent] Polling explicitly stopped in complete().');
-        }
-        // isLoading should have been set to false in finalize
-      }
-    });
+      });
   }
 
-  private mapStatusToEventType(status?: string): DeploymentEvent['type'] {
-    const upperStatus = status?.toUpperCase();
+  private extractAppNameFromRepoUrl(repoUrl: string): string {
+    try {
+      const path = new URL(repoUrl).pathname;
+      const parts = path.split('/');
+      const lastPart = parts.pop() || parts.pop(); 
+      return lastPart ? lastPart.replace('.git', '') : 'unknown-app';
+    } catch (e) { return 'unknown-app'; }
+  }
+
+  private mapStatusToEventType(status?: string): DeploymentEvent['type'] | null {
+    if (!status) return null;
+    const upperStatus = status.toUpperCase();
     switch (upperStatus) {
-      case 'SUCCESS':
-      case 'DEPLOYED':
-        return 'SUCCEEDED';
-      case 'FAILED':
-      case 'ERROR': // Assuming ERROR from backend is a final failed state
-        return 'FAILED';
-      case 'POLL_ERROR': // Specific event for polling errors
-          return 'POLL_ERROR';
-      case 'CLONING': return 'CLONING';
-      case 'BUILDING': return 'BUILDING';
-      case 'UPLOADING': return 'UPLOADING';
-      // Add other specific statuses from your backend if needed
-      default:
-        return 'STATUS_UPDATE'; // For any other non-terminal status
+      case 'SUCCESS': return 'SUCCEEDED';
+      case 'DEPLOYED': return 'DEPLOYED';
+      case 'FAILED': case 'ERROR': case 'POLL_ERROR_SERVICE': case 'TIMEOUT_POLL': return 'FAILED';
+      case 'CLONING': case 'CLONING_COMPLETE': return 'CLONING';
+      case 'BUILDING': case 'BUILD_COMPLETE': return 'BUILDING';
+      case 'UPLOADING': case 'UPLOAD_COMPLETE': return 'UPLOADING';
+      case 'PENDING': case 'QUEUED': case 'IN_PROGRESS': return 'STATUS_UPDATE';
+      default: console.warn(`Unknown status for event mapping: ${status}`); return 'STATUS_UPDATE';
     }
   }
 
   private stopPollingAndCleanup(): void {
-    console.log('[NewDeploymentPageComponent] stopPollingAndCleanup called.');
-    this.unsubscribe$.next(); // Signal to stop any ongoing operations in this component's stream
-    // isLoading and isPolling are typically managed by the main subscription's finalize/error/complete
-    // but setting them here ensures a clean state if called independently.
-    this.isLoading = false;
-    this.isPolling = false;
-    console.log('[NewDeploymentPageComponent] Polling stopped and cleanup performed.');
+    this.pollingStop$.next(); this.pollingStop$.complete();
+    this.destroy$.next(); this.destroy$.complete();
   }
 
-  private getFormValidationErrors(): string[] {
-    const errors: string[] = [];
-    Object.keys(this.deployForm.controls).forEach(key => {
-      const controlErrors = this.deployForm.get(key)?.errors;
-      if (controlErrors != null) {
-        Object.keys(controlErrors).forEach(keyError => {
-          errors.push(`Field '${key}' has error: ${keyError}`);
-        });
-      }
-    });
-    return errors;
-  }
-
-  ngOnDestroy(): void {
-    console.log('[NewDeploymentPageComponent] ngOnDestroy called. Unsubscribing.');
-    this.unsubscribe$.next();
-    this.unsubscribe$.complete();
-  }
+  ngOnDestroy(): void { this.stopPollingAndCleanup(); }
 }
