@@ -26,6 +26,7 @@ public class DeploymentDTO {
         this.deploymentDate = deploymentDate;
         this.durationSeconds = durationSeconds;
         this.deploymentUrl = deploymentUrl;
+        
     }
 
     // Getters and Setters
@@ -92,4 +93,6 @@ public class DeploymentDTO {
     public void setDeploymentUrl(String deploymentUrl) {
         this.deploymentUrl = deploymentUrl;
     }
+
+    
 }
