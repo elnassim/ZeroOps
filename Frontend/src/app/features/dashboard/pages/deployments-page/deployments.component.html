@@ -10,6 +10,14 @@
           <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
         </svg>
       </button>
+      <div class="sort-controls">
+      <label for="sort-deployments" class="visually-hidden">Sort by:</label>
+      <select id="sort-deployments" (change)="onSortChange($any($event.target).value)" class="form-select form-select-sm" aria-label="Sort deployments by">
+        <option value="date">Sort by Date (Newest)</option>
+        <option value="status">Sort by Status</option>
+        <option value="branch">Sort by Branch</option>
+      </select>
+    </div>
       <button routerLink="/dashboard/deployments/new" class="btn btn-primary new-deployment-btn">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>

@@ -3,7 +3,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Subject, Observable } from 'rxjs';
-import { takeUntil, tap } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
+
+import { SortingService } from '../../../../core/services/sorting.service';
+import { SortByDate } from '../../../../core/sorting/strategies/sort-by-date';
+import { SortByStatus } from '../../../../core/sorting/strategies/sort-by-status';
+import { SortByBranch } from '../../../../core/sorting/strategies/sort-by-branch';
+import { SortingStrategy } from '../../../../core/sorting/sorting-strategy';
+
+import { FilterHandler } from '../../../../core/filters/filter-handler';
+import { StatusFilter } from '../../../../core/filters/handlers/status-filter';
+import { BranchFilter } from '../../../../core/filters/handlers/branch-filter';
+import { DateRangeFilter } from '../../../../core/filters/handlers/date-range-filter';
 
 import { DeploymentListParams } from '../../services/deployment.service';
 import type { Deployment } from '../../models/deployment.model';
@@ -14,7 +25,6 @@ import {
 } from './components/filter-panel/filter-panel.component';
 import { DeploymentListComponent } from './components/deployment-list/deployment-list.component';
 
-// Import Facade and Toast Service
 import { DeploymentsFacadeService } from '../../services/deployments-facade.service';
 import { ToastService } from '../../../../core/services/toast.service';
 
@@ -34,33 +44,26 @@ import { ToastService } from '../../../../core/services/toast.service';
 export class DeploymentsPageComponent implements OnInit, OnDestroy {
   private unsubscribe$ = new Subject<void>();
 
-  // Observables from Facade
   deploymentsPage$: Observable<Page<Deployment> | null>;
   isLoading$: Observable<boolean>;
 
-  // Local state for template binding
   displayedDeployments: Deployment[] = [];
-  currentPageForTemplate = 1; // 1-indexed for UI
+  private rawCurrentPageDeployments: Deployment[] = [];
+  currentPageForTemplate = 1;
   totalItemsForTemplate = 0;
   pageSizeForTemplate = 10;
-
   pageSizeOptions: number[] = [5, 10, 25, 50];
 
-  // Filters are managed by the facade or passed directly
   currentApiFilterParams: DeploymentListParams = {
-    page: 0, // API is 0-indexed, will be set in fetchDeployments
-    size: this.pageSizeForTemplate, // Initial size
+    page: 0,
+    size: this.pageSizeForTemplate,
     status: [],
     branch: [],
     startDate: undefined,
     endDate: undefined,
   };
 
-  // These might be fetched via facade or a separate service if they are dynamic
-  applications: string[] = [];
-  branches: string[] = [];
-
-  initialPanelFilters: FilterPanelOutput = {
+  private currentFilterPanelOutput: FilterPanelOutput = { // Initialize for client-side chain
     status: [],
     selectedApp: null,
     selectedBranch: null,
@@ -68,13 +71,19 @@ export class DeploymentsPageComponent implements OnInit, OnDestroy {
     endDate: null,
   };
 
+  applications: string[] = []; // Consider populating via facade
+  branches: string[] = [];   // Consider populating via facade
+  initialPanelFilters: FilterPanelOutput = { ...this.currentFilterPanelOutput }; // For filter panel reset
+
   viewMode: 'table' | 'card' = 'table';
   private readonly mobileBreakpoint = 768;
+  private currentSortValue: string = 'date';
 
   constructor(
     private deploymentsFacade: DeploymentsFacadeService,
     private toastService: ToastService,
-    private router: Router
+    private router: Router,
+    private sortingService: SortingService
   ) {
     this.deploymentsPage$ = this.deploymentsFacade.deploymentsPage$;
     this.isLoading$ = this.deploymentsFacade.isLoading$;
@@ -82,21 +91,20 @@ export class DeploymentsPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.fetchDeployments(); // Initial fetch
+    this.fetchDeployments();
 
     this.deploymentsPage$
       .pipe(takeUntil(this.unsubscribe$))
       .subscribe((page) => {
-        console.log(
-          '[DeploymentsPageComponent] Received page data from API:',
-          page
-        );
+        console.log('[DeploymentsPageComponent] Received page data from API:', page);
         if (page) {
-          this.displayedDeployments = page.content;
-          this.currentPageForTemplate = page.number + 1; // Convert 0-indexed from API to 1-indexed for UI
+          this.rawCurrentPageDeployments = page.content;
+          this.currentPageForTemplate = page.number + 1;
           this.totalItemsForTemplate = page.totalElements;
           this.pageSizeForTemplate = page.size;
+          this.applyClientSideFiltersAndSort();
         } else {
+          this.rawCurrentPageDeployments = [];
           this.displayedDeployments = [];
           this.currentPageForTemplate = 1;
           this.totalItemsForTemplate = 0;
@@ -106,16 +114,11 @@ export class DeploymentsPageComponent implements OnInit, OnDestroy {
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', this.checkViewMode.bind(this));
     }
-    // TODO: Populate 'applications' and 'branches' for the filter panel, possibly via facade.
   }
 
   private checkViewMode(): void {
     if (typeof window !== 'undefined') {
-      if (window.innerWidth < this.mobileBreakpoint) {
-        this.viewMode = 'card';
-      } else {
-        this.viewMode = 'table';
-      }
+      this.viewMode = window.innerWidth < this.mobileBreakpoint ? 'card' : 'table';
     }
   }
 
@@ -124,49 +127,103 @@ export class DeploymentsPageComponent implements OnInit, OnDestroy {
   }
 
   fetchDeployments(): void {
-    this.currentApiFilterParams.page = this.currentPageForTemplate - 1; // API is 0-indexed
+    // Update API params from the currentFilterPanelOutput for backend filtering
+    this.currentApiFilterParams.page = this.currentPageForTemplate - 1;
     this.currentApiFilterParams.size = this.pageSizeForTemplate;
-    console.log(
-      '[DeploymentsPageComponent] Fetching deployments with params:',
-      JSON.stringify(this.currentApiFilterParams)
-    ); // <<< ADD THIS LOG
+    this.currentApiFilterParams.status = this.currentFilterPanelOutput.status;
+    this.currentApiFilterParams.branch = this.currentFilterPanelOutput.selectedBranch
+      ? [this.currentFilterPanelOutput.selectedBranch]
+      : [];
+    this.currentApiFilterParams.startDate = this.currentFilterPanelOutput.startDate
+      ? new Date(this.currentFilterPanelOutput.startDate).toISOString()
+      : undefined;
+    this.currentApiFilterParams.endDate = this.currentFilterPanelOutput.endDate
+      ? new Date(this.currentFilterPanelOutput.endDate).toISOString()
+      : undefined;
+    // Note: App filter (selectedApp) is not used in currentApiFilterParams here.
+
+    console.log('[DeploymentsPageComponent] Fetching deployments with API params:', JSON.stringify(this.currentApiFilterParams));
     this.deploymentsFacade.loadDeployments(this.currentApiFilterParams);
   }
 
   onFiltersChanged(filtersFromPanel: FilterPanelOutput): void {
-    this.currentApiFilterParams.status = filtersFromPanel.status;
-    this.currentApiFilterParams.branch = filtersFromPanel.selectedBranch
-      ? [filtersFromPanel.selectedBranch]
-      : [];
-    this.currentApiFilterParams.startDate = filtersFromPanel.startDate
-      ? new Date(filtersFromPanel.startDate).toISOString()
-      : undefined;
-    this.currentApiFilterParams.endDate = filtersFromPanel.endDate
-      ? new Date(filtersFromPanel.endDate).toISOString()
-      : undefined;
-    // TODO: Add appName filtering if backend supports it, update currentApiFilterParams
-
+    this.currentFilterPanelOutput = filtersFromPanel;
     this.currentPageForTemplate = 1; // Reset to first page on filter change
-    this.fetchDeployments();
+    this.fetchDeployments(); // Fetch data from backend using these filters
+    // The subscription to deploymentsPage$ will then call applyClientSideFiltersAndSort
+  }
+
+  private applyClientSideFiltersAndSort() {
+    if (!this.rawCurrentPageDeployments) {
+      this.displayedDeployments = [];
+      return;
+    }
+
+    let itemsToProcess = [...this.rawCurrentPageDeployments];
+
+    // Build and apply the client-side filter chain
+    const statusHandler = new StatusFilter(this.currentFilterPanelOutput.status);
+    const branchHandler = new BranchFilter(this.currentFilterPanelOutput.selectedBranch);
+    const dateHandler = new DateRangeFilter(
+      this.currentFilterPanelOutput.startDate,
+      this.currentFilterPanelOutput.endDate
+    );
+    // Add other client-side filters here if needed (e.g., appName if not backend filtered)
+
+    // Chain them: status -> branch -> date
+    statusHandler
+      .setNext(branchHandler)
+      .setNext(dateHandler);
+
+    itemsToProcess = statusHandler.handle(itemsToProcess);
+
+    // Now apply sorting to the client-side filtered list
+    this.applySortStrategyToItems(itemsToProcess);
   }
 
   onPageChanged(page: number): void {
-    // page is 1-indexed from component
     this.currentPageForTemplate = page;
     this.fetchDeployments();
   }
 
   onPageSizeChanged(newPageSize: number): void {
     this.pageSizeForTemplate = newPageSize;
-    this.currentPageForTemplate = 1; // Reset to first page on size change
+    this.currentPageForTemplate = 1;
     this.fetchDeployments();
+  }
+
+  onSortChange(sortValue: string) {
+    this.currentSortValue = sortValue;
+    this.applyClientSideFiltersAndSort(); // Re-apply filters then sort with new strategy
+  }
+
+  private applySortStrategyToItems(itemsToSort: Deployment[]) {
+    if (!itemsToSort || itemsToSort.length === 0) {
+      this.displayedDeployments = [];
+      return;
+    }
+    let strategy: SortingStrategy<Deployment>;
+    switch (this.currentSortValue) {
+      case 'status':
+        strategy = new SortByStatus();
+        break;
+      case 'branch':
+        strategy = new SortByBranch();
+        break;
+      case 'date':
+      default:
+        strategy = new SortByDate();
+        break;
+    }
+    this.sortingService.setStrategy(strategy);
+    this.displayedDeployments = this.sortingService.applyStrategy(itemsToSort);
   }
 
   handleDeploymentAction(
     actionType: 'started' | 'finished' | 'redeploy' | 'viewLogs',
     data?: any
   ): void {
-    const deploymentId = data as string; // Assuming data is deploymentId for these actions
+    const deploymentId = data as string;
 
     if (actionType === 'redeploy' && deploymentId) {
       this.toastService.showInfo(`Redeploying ${deploymentId}...`);
@@ -177,31 +234,30 @@ export class DeploymentsPageComponent implements OnInit, OnDestroy {
           next: (statusResponse: { status: string }) => {
             if (
               statusResponse.status === 'SUCCESS' ||
-              statusResponse.status === 'FAILED'
+              statusResponse.status === 'FAILED' ||
+              statusResponse.status === 'DEPLOYED'
             ) {
               this.toastService.showSuccess(
                 `Redeployment of ${deploymentId} ${statusResponse.status.toLowerCase()}.`
               );
-              this.fetchDeployments(); // Refresh list
+              this.fetchDeployments();
             }
           },
           error: (err: any) => {
             console.error('Redeploy error from facade:', err);
             this.toastService.showError(`Redeploy failed for ${deploymentId}.`);
-            this.fetchDeployments(); // Refresh list to show potential 'failed' state
+            this.fetchDeployments();
           },
         });
     } else if (actionType === 'viewLogs' && deploymentId) {
       this.router.navigate(['/dashboard/deployments', deploymentId, 'logs']);
     } else if (actionType === 'finished') {
-      // This might be from the child component's own polling after an action it initiated.
-      // If the facade handles all polling, this specific branch might be less needed here.
       if (data?.deploymentId) {
         console.log(
           `Child component finished action for ${data.deploymentId} (Success: ${data.success}).`
         );
       }
-      this.fetchDeployments(); // Refresh to be sure
+      this.fetchDeployments();
     }
   }
 
