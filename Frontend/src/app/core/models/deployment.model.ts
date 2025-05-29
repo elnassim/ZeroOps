@@ -18,7 +18,17 @@ export interface Deployment {
   url?: string | null; // If you want to store the original gitUrl on the frontend model too
 }
 export type FrontendDeploymentStatus = "processing" | "deployed" | "failed" | "pending" | "queued" | "cloning" | "building" | "uploading" | "error" | "poll_error_service";
-
+export interface BackendDeploymentDTO { // DTO for listing deployments
+  id: string;
+  repoUrl: string; // Or gitUrl
+  branch: string;
+  status: string;
+  appName?: string;
+  createdAt: string;
+  updatedAt: string;
+  deploymentUrl?: string; // Ensure this field is present
+  userId?: string;
+}
 export interface LogEntry {
   timestamp: string; // Or Date
   message: string;

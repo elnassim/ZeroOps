@@ -2,58 +2,45 @@ import { Injectable } from "@angular/core";
 import { HttpClient, HttpParams, HttpErrorResponse } from "@angular/common/http";
 import { type Observable, throwError } from "rxjs";
 import { map, catchError } from "rxjs/operators";
-import type { Deployment, FrontendDeploymentStatus } from "../models/deployment.model"; // Ensure this path is correct
+// Ensure this Deployment model is the one you intend to use for the dashboard feature
+import type { Deployment, FrontendDeploymentStatus } from "../models/deployment.model";
 import { environment } from "../../../../environments/environment";
 import { Page } from "../../../core/models/page.model";
+// Use the BackendDeploymentDTO from the core models
+import type { BackendDeploymentDTO as CoreBackendDeploymentDTO } from '../../../core/models/deployment.model';
 
-// This interface represents the structure of the DTO coming from the backend
-export interface BackendDeploymentDTO {
-  id: number; // Database ID (Long in Java maps to number in TS)
+// REMOVE THE LOCAL DEFINITION of BackendDeploymentDTO that was here
+
+export interface DeployResponse { // Matches backend DTO
   deploymentId: string;
-  appName: string;
-  branch: string;
-  status: string; // Crucial for deployment status
-  deploymentDate: string; // ISO date string (from LocalDateTime in Java)
-  deployedUrl?: string; // The URL where the deployment is accessible, optional
-  durationSeconds?: number;
-  gitRepoUrl: string; // This is the field for the git URL
-  errorMessage?: string;
-   // Optional: if logs are sometimes embedded
+  message: string;
+  deploymentUrl?: string;
+  status?: string;
 }
 
-// Updated DeployResponse interface as per your request
-export interface DeployResponse {
-  deploymentId: string;
-  [key: string]: any;
-  deploymentUrl?: string; // This should be the UUID string
-  // Add other relevant fields from your backend's DTO if needed
-  // e.g., initialStatus, appName, etc.
-}
-
-// For GET /api/deployments/{deploymentId}/logs
 export interface LogEntry {
-  id?: number; // Log ID from backend
-  timestamp: string; // ISO date string
+  id?: number;
+  timestamp: string;
   level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG' | string;
   message: string;
 }
 
-// Interface for the parameters of the list method
 export interface DeploymentListParams {
-  page: number; // 0-indexed for backend
+  page: number;
   size: number;
-  status?: string[]; // For filtering by status
+  status?: string[];
   branch?: string[];
   sort?: string;
-  startDate?: string; // ISO date string
-  endDate?: string;   // ISO date string
+  startDate?: string;
+  endDate?: string;
+  // Add appName if your backend supports filtering by it for the list
+  appName?: string;
 }
 
 @Injectable({
   providedIn: "root",
 })
 export class DeploymentService {
-  // This apiUrl is already correct and points to /api/deployments
   private apiUrl = `${environment.apiUrl}/api/deployments`;
 
   private colorOptions = [
@@ -68,20 +55,14 @@ export class DeploymentService {
       .set('page', params.page.toString())
       .set('size', params.size.toString());
 
-    if (params.status && params.status.length > 0) {
-      params.status.forEach(s => {
-        httpParams = httpParams.append('status', s.toUpperCase()); // Backend expects uppercase status
-      });
-    }
-    if (params.branch && params.branch.length > 0) {
-      params.branch.forEach(b => {
-        httpParams = httpParams.append('branch', b);
-      });
-    }
     if (params.sort) {
       httpParams = httpParams.set('sort', params.sort);
-    } else {
-      httpParams = httpParams.set('sort', 'deploymentDate,desc'); // Default sort
+    }
+    if (params.status && params.status.length > 0) {
+      httpParams = httpParams.set('status', params.status.join(','));
+    }
+    if (params.branch && params.branch.length > 0) {
+        httpParams = httpParams.set('branch', params.branch.join(','));
     }
     if (params.startDate) {
       httpParams = httpParams.set('startDate', params.startDate);
@@ -89,62 +70,69 @@ export class DeploymentService {
     if (params.endDate) {
       httpParams = httpParams.set('endDate', params.endDate);
     }
+    if (params.appName) {
+      httpParams = httpParams.set('appName', params.appName);
+    }
 
-    // The GET request for listing deployments uses the correct apiUrl base
-    return this.http.get<Page<BackendDeploymentDTO>>(this.apiUrl, { params: httpParams })
+    return this.http.get<Page<CoreBackendDeploymentDTO>>(`${this.apiUrl}`, { params: httpParams })
       .pipe(
-        map(pageDto => ({
+        map((pageDto: Page<CoreBackendDeploymentDTO>) => ({
           ...pageDto,
-          content: pageDto.content.map(dto => this.mapDtoToDeployment(dto))
+          content: pageDto.content.map((dto: CoreBackendDeploymentDTO) => this.mapDtoToDeployment(dto))
         })),
-        catchError(this.handleError) // Using the class's general handleError for this
+        catchError(this.handleError)
       );
   }
 
-  // Updated deploy method as per your request
   deploy(repoUrl: string, branch?: string, appName?: string): Observable<DeployResponse> {
-    // Ensure the payload matches what your backend's GitRepoRequest expects
-    const payload = {
-      gitUrl: repoUrl,
-      appName: appName || undefined, // Send appName if provided
-      branch: branch || 'main' // Default branch if not provided, or send undefined if backend handles default
-    };
-    console.log('[DeploymentService - features/dashboard] Sending deploy request:', payload, 'to URL:', this.apiUrl);
-    // POST request now uses this.apiUrl directly, which is `${environment.apiUrl}/api/deployments`
-    return this.http.post<DeployResponse>(this.apiUrl, payload).pipe(
-      catchError(err => {
-        console.error('[DeploymentService - features/dashboard] An API error occurred in deploy method', err);
-        // It's good practice to transform the error into a user-friendly message or rethrow a custom error
-        // Using the error handling from your snippet for this specific method
-        throw new Error(`Server error ${err.status}: ${err.statusText}`);
-      })
-    );
+    const payload = { repoUrl, branch: branch || 'main', appName };
+    return this.http.post<DeployResponse>(`${environment.apiUrl}/api/deploy`, payload)
+      .pipe(catchError(this.handleError));
   }
 
   redeploy(deploymentId: string): Observable<DeployResponse> {
-    // This already correctly uses `${this.apiUrl}/${deploymentId}/redeploy`
     return this.http.post<DeployResponse>(`${this.apiUrl}/${deploymentId}/redeploy`, {})
-      .pipe(catchError(this.handleError)); // Using the class's general handleError
+      .pipe(catchError(this.handleError));
   }
 
   getLogs(deploymentId: string, limit = 50): Observable<LogEntry[]> {
     const params = new HttpParams().set('limit', limit.toString());
-    // This already correctly uses `${this.apiUrl}/${deploymentId}/logs`
     return this.http.get<LogEntry[]>(`${this.apiUrl}/${deploymentId}/logs`, { params })
-      .pipe(catchError(this.handleError)); // Using the class's general handleError
+      .pipe(catchError(this.handleError));
   }
 
-  private mapDtoToDeployment(dto: BackendDeploymentDTO): Deployment {
+  private mapDtoToDeployment(dto: CoreBackendDeploymentDTO): Deployment {
+    // The 'id' from CoreBackendDeploymentDTO is the string UUID (deploymentId)
+    // The 'Deployment' model in 'features/dashboard/models/deployment.model.ts'
+    // uses 'id' for its primary identifier and also has 'deploymentId'.
+    // We need to ensure these are mapped correctly based on intention.
+    // Assuming dto.id (UUID) should map to Deployment.id (which is also the deploymentId).
     return {
-      id: dto.id.toString(), // Map backend DB ID to string for frontend model
-      deploymentId: dto.deploymentId,
-      appName: dto.appName,
-      iconBg: this.colorOptions[dto.id % this.colorOptions.length], // Consistent color based on ID
+      id: dto.id, // This is the string UUID from backend (deploymentId)
+      deploymentId: dto.id, // Explicitly map to deploymentId as well if your dashboard model uses it
+      repoUrl: dto.repoUrl,
       branch: dto.branch,
-      status: dto.status as FrontendDeploymentStatus, // Directly map status
-      startedAt: this.getRelativeTimeString(new Date(dto.deploymentDate)),
-      duration: dto.durationSeconds ?? 0,
-      url: dto.deployedUrl, // Map deployedUrl to url, will be undefined if not present
+      status: dto.status.toUpperCase() as FrontendDeploymentStatus, // Cast if necessary, ensure FrontendDeploymentStatus includes all possibilities
+      appName: dto.appName || 'N/A', // Provide a default for appName if it's optional in DTO but required in model
+      createdAt: dto.createdAt,
+      updatedAt: dto.updatedAt,
+      userId: dto.userId,
+      deploymentUrl: dto.deploymentUrl,
+      // Properties from dashboard/models/deployment.model.ts that are not in CoreBackendDeploymentDTO
+      // need to be handled (e.g., iconBg, startedAt, duration, url, gitUrl).
+      // For now, they will be undefined if not mapped.
+      // Example for iconBg (if you have logic for it):
+      iconBg: this.colorOptions[Math.floor(Math.random() * this.colorOptions.length)], // Placeholder for iconBg
+      // startedAt and duration would need to come from backend or be derived.
+      // If 'url' in dashboard model is same as 'deploymentUrl', map it.
+      url: dto.deploymentUrl,
+      // If 'gitUrl' in dashboard model is same as 'repoUrl', map it.
+      gitUrl: dto.repoUrl,
+      // Ensure all required fields of 'Deployment' are covered.
+      // 'startedAt' and 'duration' from the dashboard model are not in CoreBackendDeploymentDTO.
+      // They will be undefined unless you add them or derive them.
+      startedAt: dto.createdAt, // Or a more specific 'startedAt' field if backend provides it
+      duration: 0, // Placeholder, backend DTO from core/models doesn't have durationSeconds
     };
   }
 
@@ -171,7 +159,6 @@ export class DeploymentService {
     return `${years}y ago`;
   }
 
-  // General error handler for other methods in this service
   private handleError(error: HttpErrorResponse): Observable<never> {
     console.error('An API error occurred', error);
     let errorMessage = 'An unknown error occurred!';

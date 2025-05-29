@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnDestroy } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
-import type { Deployment } from "../../../../models/deployment.model";
+import type { Deployment, FrontendDeploymentStatus } from "../../../../models/deployment.model";
 import { StatusBadgeComponent } from "../status-badge/status-badge.component";
 import { DeploymentService, DeployResponse } from "../../../../services/deployment.service";
 import { DeployStatusService } from "../../../../services/deploy-status.service";
@@ -121,7 +121,7 @@ export class DeploymentListComponent implements OnDestroy {
     this.deploymentActionStarted.emit(deploymentId); // Inform parent
     const deployment = this.deployments.find(d => d.deploymentId === deploymentId);
     if (deployment) {
-      deployment.status = 'building'; // Optimistic UI update
+      deployment.status = 'BUILDING'; // Optimistic UI update
     }
 
     // Emit REDEPLOY_STARTED event
@@ -152,7 +152,7 @@ export class DeploymentListComponent implements OnDestroy {
       next: (statusResponse) => {
         console.log('Redeployment status update from polling:', statusResponse);
         if (deployment) {
-          deployment.status = statusResponse.status.toLowerCase() as "success" | "building" | "failed"; // Update local status
+          deployment.status = statusResponse.status.toUpperCase() as FrontendDeploymentStatus; // Update local status
           // The DeployStatusService should be emitting detailed events.
           // We only need to handle the final state here for this component's specific logic.
           if (statusResponse.status === 'SUCCESS' || statusResponse.status === 'DEPLOYED' || statusResponse.status === 'FAILED' || statusResponse.status === 'POLL_ERROR_SERVICE' || statusResponse.status === 'TIMEOUT_POLL') {
@@ -166,7 +166,7 @@ export class DeploymentListComponent implements OnDestroy {
       error: (err) => {
         console.error('Error during redeployment or polling pipeline:', err);
         if (deployment) {
-          deployment.status = 'failed'; // Update UI
+          deployment.status = 'FAILED'; // Update UI
         }
         this.redeployingId = null;
         this.deploymentActionFinished.emit({deploymentId: deploymentId, success: false});

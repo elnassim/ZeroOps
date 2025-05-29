@@ -1,62 +1,84 @@
 <div class="dashboard">
   <h1 class="dashboard-title">Dashboard</h1>
-  
+
   <!-- Stats Cards -->
   <div class="stats-grid">
-    <app-stats-card 
-      title="Total Deployments" 
-      value="128" 
-      trend="up" 
-      trendValue="12%" 
+    <app-stats-card
+      title="Total Deployments"
+      value="128"
+      trend="up"
+      trendValue="12%"
       sparklineData="25,36,42,29,35,48,52,45,62,58,65,70"
     ></app-stats-card>
-    
-    <app-stats-card 
-      title="Active Projects" 
-      value="24" 
-      trend="up"    
-      trendValue="8%" 
+
+    <app-stats-card
+      title="Active Projects"
+      value="24"
+      trend="up"
+      trendValue="8%"
       sparklineData="12,15,18,14,19,22,21,24,23,25,24,24"
     ></app-stats-card>
-    
-    <app-stats-card 
-      title="Uptime" 
-      value="99.98%" 
-      trend="stable" 
-      trendValue="0.01%" 
+
+    <app-stats-card
+      title="Uptime"
+      value="99.98%"
+      trend="stable"
+      trendValue="0.01%"
       icon="check-circle"
     ></app-stats-card>
-    
-    <app-stats-card 
-      title="Errors Today" 
-      value="3" 
-      trend="down" 
-      trendValue="42%" 
+
+    <app-stats-card
+      title="Errors Today"
+      value="3"
+      trend="down"
+      trendValue="42%"
       icon="alert-circle"
     ></app-stats-card>
   </div>
-  
+
+  <!-- Featured/Latest Live URL Display -->
+  <div class="featured-url-container">
+    <h2 class="featured-url-header">Latest Live Site</h2>
+    <div class="live-url-content">
+      <!--
+        To make this dynamic, you'll need to bind 'latestDeploymentUrl'
+        to a property in your dashboard.component.ts, which should be
+        populated with the actual URL (e.g., from a service).
+        Example: [href]="latestDeploymentUrl" and {{ latestDeploymentUrl || 'N/A' }}
+      -->
+      <span class="live-url-label">URL:</span>
+      <a href="#" target="_blank" class="live-url-link placeholder-link">
+        http://placeholder-deployment-id.your-ip.nip.io
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-box-arrow-up-right inline-block ml-1" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z"/>
+          <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z"/>
+        </svg>
+      </a>
+      <p class="url-note-placeholder">(This is a placeholder. Update component logic to show actual data.)</p>
+    </div>
+  </div>
+
   <!-- Deployments Table -->
   <div class="deployments-container">
     <h2 class="deployments-header">Recent Deployments</h2>
     <app-deployments-table></app-deployments-table>
   </div>
-  
+
   <!-- Metrics Panel -->
   <div class="metrics-grid">
-    <app-metrics-panel 
-      title="CPU Usage" 
+    <app-metrics-panel
+      title="CPU Usage"
       chartData="10,25,30,22,40,38,45,55,48,52,60,58"
       chartLabels="12am,2am,4am,6am,8am,10am,12pm,2pm,4pm,6pm,8pm,10pm"
     ></app-metrics-panel>
-    
-    <app-metrics-panel 
-      title="Memory Usage" 
+
+    <app-metrics-panel
+      title="Memory Usage"
       chartData="45,48,52,60,58,65,70,68,72,75,80,78"
       chartLabels="12am,2am,4am,6am,8am,10am,12pm,2pm,4pm,6pm,8pm,10pm"
     ></app-metrics-panel>
   </div>
-  
+
   <!-- Logs Preview -->
   <app-logs-preview></app-logs-preview>
 </div>

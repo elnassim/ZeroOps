@@ -75,6 +75,7 @@ export class NewDeploymentPageComponent implements OnInit, OnDestroy {
         tap((response: DeployResponse) => {
           if (response && response.deploymentId) {
             this.deploymentId = response.deploymentId;
+            this.deploymentUrl = response.deploymentUrl || null;
             const idMessagePart = `ID: ${this.deploymentId}`; // this.deploymentId is string here
             this.currentStatus = `Deployment initiated (${idMessagePart}). Waiting for status updates...`;
             // Corrected ToastService call: combine title and message
@@ -134,7 +135,7 @@ export class NewDeploymentPageComponent implements OnInit, OnDestroy {
         })
       )
       .subscribe({
-        next: (statusResponse: DeploymentStatusResponse | null) => {
+        next: (statusResponse: any /* Type this with DeploymentStatusResponse */) => {
           if (!statusResponse) { 
             return;
           }

@@ -1,11 +1,13 @@
 package com.example.zeroops.controller;
 
 import com.example.zeroops.dto.DeploymentDTO;
+import com.example.zeroops.dto.DeployRequest;
 import com.example.zeroops.dto.DeployResponse; // Import DeployResponse
 import com.example.zeroops.entity.DeploymentStatus;
 import com.example.zeroops.service.DeploymentService;
 import com.example.zeroops.service.DeployService;
 import org.slf4j.Logger;
+import com.example.zeroops.service.DeploymentFacade;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -27,12 +29,18 @@ public class DeploymentController {
 
     private static final Logger logger = LoggerFactory.getLogger(DeploymentController.class);
     private final DeploymentService deploymentService; // For managing deployment records
-    private final DeployService deployService; // For initiating deploy/redeploy actions
+    private final DeployService deployService;
+    private final DeploymentFacade deploymentFacade;
+     // For initiating deploy/redeploy actions
 
     @Autowired
-    public DeploymentController(DeploymentService deploymentService, DeployService deployService) {
+    public DeploymentController(
+            DeploymentService deploymentService,
+            DeployService deployService, // Keep if still used for redeploy
+            DeploymentFacade deploymentFacade) { // <<< ADD DeploymentFacade as a parameter
         this.deploymentService = deploymentService;
-        this.deployService = deployService;
+        this.deployService = deployService; // Keep if still used for redeploy
+        this.deploymentFacade = deploymentFacade; // <<< ASSIGN the constructor parameter to the field
     }
 
     @PostMapping
@@ -43,16 +51,29 @@ public class DeploymentController {
             return ResponseEntity.badRequest().body(Map.of("error", "Git URL is required."));
         }
         try {
-            // This calls DeploymentService which has its own initiation logic (no strategies from DeployService)
-            // If you intend to use DeployService.startDeploy here, the call would change.
-            // Based on current structure, this seems to be for creating the DB record and initial queuing via DeploymentService.
-            DeploymentDTO newDeployment = deploymentService.initiateNewDeployment(
-                    request.getGitUrl(),
-                    request.getAppName(),
-                    request.getBranch()
-            );
-            logger.info("Deployment initiated successfully with UUID: {}", newDeployment.getDeploymentId());
-            return ResponseEntity.ok(newDeployment);
+            // Create a DeployRequest DTO to pass to the facade
+            DeployRequest deployRequest = new DeployRequest();
+            deployRequest.setRepoUrl(request.getGitUrl());
+            deployRequest.setAppName(request.getAppName());
+            deployRequest.setBranch(request.getBranch());
+
+            // Call the facade's method
+            logger.info("Calling deploymentFacade.deployAndNotify for Git URL: {}", request.getGitUrl());
+            DeployResponse response = deploymentFacade.deployAndNotify(deployRequest); // <<< USE THE FACADE
+
+            // Handle the response from the facade
+            if (response.getDeploymentId() == null && response.getMessage() != null && response.getMessage().contains("Failed")) {
+                logger.error("Facade indicated failure to initiate deployment: {}", response.getMessage());
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                     .body(Map.of("error", response.getMessage()));
+            }
+            
+            logger.info("Deployment initiated via facade successfully. Response: {}", response);
+            // The facade's DeployResponse might be different from DeploymentDTO.
+            // Return the DeployResponse directly, or map it to DeploymentDTO if your frontend expects that.
+            // For simplicity, returning DeployResponse:
+            return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             logger.error("Error creating deployment: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -104,9 +125,9 @@ public class DeploymentController {
     public ResponseEntity<?> redeploy(@PathVariable String deploymentId) { // Removed strategyType if it was here
         logger.info("Received request to redeploy deployment ID: {}", deploymentId);
         try {
-            DeployResponse response = deployService.redeploy(deploymentId); // Call updated DeployService.redeploy
+            // This still uses the direct deployService. You might want to move this to the facade too for consistency.
+            DeployResponse response = deployService.redeploy(deploymentId); 
             logger.info("Redeployment initiated for ID: {}, Message: {}", deploymentId, response.getMessage());
-            // Return the DeployResponse object or map its fields as needed
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error during redeployment for ID {}: {}", deploymentId, e.getMessage(), e);
